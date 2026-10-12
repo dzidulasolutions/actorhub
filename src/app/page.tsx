@@ -1,7 +1,18 @@
-// src/app/page.tsx  (remplace la page de test)
-import { redirect } from "next/navigation";
+"use client";
 
-// Provisoire : l'étape 6 y branchera l'onboarding
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { isOnboarded } from "@/lib/local-storage";
+import { OnboardingSkeleton } from "@/components/onboarding/onboarding-skeleton";
+
+// Porte d'entrée : localStorage n'existe que côté navigateur, donc la décision
+// se prend ici, après l'affichage. Premier passage → onboarding, sinon → dashboard.
 export default function Home() {
-  redirect("/dashboard");
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(isOnboarded() ? "/dashboard" : "/onboarding");
+  }, [router]);
+
+  return <OnboardingSkeleton />;
 }
