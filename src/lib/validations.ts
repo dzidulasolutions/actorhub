@@ -68,3 +68,17 @@ export function parseActorInput(
 }
 
 export type ActorFormValues = z.infer<typeof actorFormSchema>;
+
+// ---------- Validation côté API (utilisée par les Route Handlers) ----------
+
+// Actor : "utilisateur~actor" ou ID brut de 17 caractères
+export const APIFY_ACTOR_ID = /^([A-Za-z0-9_.-]+~[A-Za-z0-9_.-]+|[A-Za-z0-9]{17})$/;
+// Run et dataset : toujours 17 caractères alphanumériques
+export const APIFY_RESOURCE_ID = /^[A-Za-z0-9]{17}$/;
+
+export const startRunSchema = z.object({
+  actorId: z.string().regex(APIFY_ACTOR_ID, "Identifiant d'Actor invalide"),
+  input: z.record(z.string(), z.unknown()).default({}),
+  // Plafond de résultats : protège tes crédits (1000 max par lancement)
+  maxItems: z.number().int().min(1).max(1000).optional(),
+});
