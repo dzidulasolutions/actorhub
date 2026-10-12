@@ -1,6 +1,7 @@
 import { Logo } from "@/components/layout/logo";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { MobileHeader } from "@/components/layout/mobile-header";
+import { OnboardingGuard } from "@/components/layout/onboarding-guard";
 
 // Coquille de l'app : sidebar sur fond gris + grande carte blanche arrondie (style Preforge)
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -12,7 +13,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card lg:border lg:border-border">
         <MobileHeader />
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="flex-1 overflow-y-auto">
+          <OnboardingGuard>{children}</OnboardingGuard>
+        </main>
       </div>
     </div>
   );
