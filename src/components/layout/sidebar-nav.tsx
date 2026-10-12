@@ -26,9 +26,9 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         onClick={onNavigate} // ferme le menu mobile après un clic
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-sm transition-colors",
+          "flex items-center gap-3 border border-transparent px-3 py-2 text-sm transition-colors",
           active
-            ? "border-border bg-card font-medium text-foreground shadow-card"
+            ? "border-border bg-card font-medium text-foreground"
             : "text-muted-foreground hover:bg-card/60 hover:text-foreground"
         )}
       >

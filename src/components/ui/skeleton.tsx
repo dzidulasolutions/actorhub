@@ -8,7 +8,7 @@ export function Skeleton({
     <div
       aria-hidden="true" // les lecteurs d'écran l'ignorent
       className={cn(
-        "relative overflow-hidden rounded-md bg-skeleton",
+        "relative overflow-hidden bg-skeleton",
         // Le reflet : un pseudo-élément qui glisse (keyframe "shimmer" définie dans globals.css)
         "before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer",
         "before:bg-linear-to-r before:from-transparent before:via-white/60 before:to-transparent",

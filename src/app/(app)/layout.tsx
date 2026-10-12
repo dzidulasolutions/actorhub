@@ -10,7 +10,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <Logo />
         <SidebarNav />
       </aside>
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card lg:rounded-2xl lg:border lg:border-border lg:shadow-card">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card lg:border lg:border-border">
         <MobileHeader />
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>

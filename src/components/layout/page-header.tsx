@@ -31,7 +31,7 @@ export function PageHeaderSkeleton({ withAction = true }: { withAction?: boolean
         <Skeleton className="h-6 w-40" />
         <Skeleton className="h-3.5 w-64 max-w-[60vw]" />
       </div>
-      {withAction && <Skeleton className="h-9 w-40 rounded-lg" />}
+      {withAction && <Skeleton className="h-9 w-40" />}
     </div>
   );
 }
