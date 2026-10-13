@@ -1,4 +1,3 @@
-// src/components/searches/status-badge.tsx
 import { cn } from "@/lib/utils";
 import type { RunStatus } from "@/lib/run-status";
 
