@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ImportButton } from "./import-button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -29,15 +30,16 @@ const inputSummary = (input: Record<string, unknown>) => {
 const countLabel = (n: number) => `${n} résultat${n > 1 ? "s" : ""}`;
 
 export function HistoryPage() {
-const [toDelete, setToDelete] = useState<SavedSearchMeta | null>(null);
-const [deleteOpen, setDeleteOpen] = useState(false);
+  const [toDelete, setToDelete] = useState<SavedSearchMeta | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const { saved, ready, error } = useSavedSearches();
   const session = useSearches();
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   if (!ready) return <HistorySkeleton />;
 
-async function confirmDelete() {
+  async function confirmDelete() {
     if (!toDelete) return;
     setDeleteOpen(false); // ferme la modale tout de suite ; la suppression continue en arrière-plan
     try {
@@ -56,12 +58,14 @@ async function confirmDelete() {
       <PageHeader
         title="Historique"
         description="Tes recherches de cette session et celles sauvegardées dans ce navigateur"
+        actions={<ImportButton onError={setImportError} />}
       />
 
       <div className="space-y-8 p-5 sm:p-6">
-        {(error || deleteError) && (
+
+        {(error || deleteError || importError) && (
           <p role="alert" className="border-l-2 border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
-            {deleteError ?? error}
+            {importError ?? deleteError ?? error}
           </p>
         )}
 

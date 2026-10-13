@@ -25,7 +25,7 @@ function RowSkeleton() {
 export function HistorySkeleton() {
   return (
     <div role="status" aria-label="Chargement de l'historique">
-      <PageHeaderSkeleton withAction={false} />
+            <PageHeaderSkeleton />
       <div className="space-y-8 p-5 sm:p-6">
         <section className="space-y-3">
           <Skeleton className="h-5 w-44" />
