@@ -83,4 +83,28 @@ describe("normalizeResult", () => {
   it("supporte un élément qui n'est pas un objet", () => {
     expect(normalizeResult("texte", 0).raw).toEqual({ value: "texte" });
   });
+
+    it("reconnaît une vraie fiche Google Maps (Lomé) sans site web", () => {
+    const item = {
+      title: "SEA VIEW ROOFTOP INDIAN RESTAURANTS AND HOTELS",
+      categoryName: "Restaurant indien",
+      address: "4696+38F, Rue des Camomilles, Lomé, Togo",
+      phone: "+228 99 91 00 09",
+      totalScore: 4.6,
+      reviewsCount: 23,
+      location: { lat: 6.1176797, lng: 1.2107376 },
+      imageUrl: "https://lh3.googleusercontent.com/x",
+      url: "https://www.google.com/maps/search/?api=1&query=x",
+      emails: [],
+      phones: [],
+      linkedIns: [],
+    };
+    const r = normalizeResult(item, 0);
+    expect(r.subtitle).toBe("Rue des Camomilles, Lomé, Togo"); // code Google retiré
+    expect(r.phones).toEqual(["+228 99 91 00 09"]);
+    expect(r.emails).toEqual([]);
+    expect(r.website).toBeNull();
+    expect(r.image).toBe("https://lh3.googleusercontent.com/x");
+  });
+  
 });

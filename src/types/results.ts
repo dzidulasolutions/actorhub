@@ -29,4 +29,5 @@ export interface NormalizedResult {
   phones: string[];
   socials: SocialLink[];
   date: string | null;
+  image: string | null; // photo https (couverture de la carte)
 }

@@ -10,6 +10,9 @@ import {
 } from "@/components/ui/sheet";
 import { Logo } from "./logo";
 import { SidebarNav } from "./sidebar-nav";
+import { Suspense } from "react";
+import { SidebarNavSkeleton } from "./sidebar-nav-skeleton";
+
 
 // Visible uniquement sous 1024px (lg:hidden) : la sidebar devient un tiroir
 export function MobileHeader() {
@@ -28,7 +31,9 @@ export function MobileHeader() {
         <SheetContent side="left" className="flex w-72 flex-col gap-6 bg-background p-4">
           <SheetTitle className="sr-only">Menu</SheetTitle>
           <Logo />
-          <SidebarNav onNavigate={() => setOpen(false)} />
+          <Suspense fallback={<SidebarNavSkeleton />}>
+            <SidebarNav onNavigate={() => setOpen(false)} />
+          </Suspense>
         </SheetContent>
       </Sheet>
     </header>

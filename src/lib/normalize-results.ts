@@ -13,6 +13,12 @@ const ADDRESS_KEYS = ["address", "location", "fullAddress", "street", "city"];
 const DATE_KEYS = ["date", "publishedAt", "createdAt", "postedAt", "timestamp", "datePublished"];
 const PHONE_KEYS = ["phone", "phones", "phoneNumber", "telephone", "mobile"];
 
+// 1. Avec les autres constantes en haut du fichier
+const IMAGE_KEYS = ["imageUrl", "image", "thumbnail", "thumbnailUrl", "profilePicture", "avatar", "photoUrl"];
+
+// 2. Avant pickAddress : retire le "plus code" Google en début d'adresse (ex. "4696+38F, ")
+const stripPlusCode = (s: string) => s.replace(/^[A-Z0-9]{4,8}\+[A-Z0-9]{2,3},?\s+/, "");
+
 // "linkedIns", "facebooks", "instagram"… (avec ou sans "s" final)
 const SOCIAL_KEY = /^(linkedin|facebook|instagram|twitter|youtube|tiktok)s?$/i;
 
@@ -76,7 +82,7 @@ function normalizeWebsite(value: string | null): string | null {
 // Adresse : texte direct, ou assemblage des champs d'un objet { street, city, ... }
 function pickAddress(obj: Record<string, unknown>): string | null {
   const direct = pickString(obj, ADDRESS_KEYS);
-  if (direct) return direct;
+    if (direct) return stripPlusCode(direct);
   for (const key of ADDRESS_KEYS) {
     const v = obj[key];
     if (isObject(v)) {
@@ -173,6 +179,11 @@ export function normalizeResult(item: unknown, index: number): NormalizedResult 
     phones: pickPhones(raw),
     socials: pickSocials(raw),
     date: pickDate(raw),
+    // 3. Dans l'objet renvoyé par normalizeResult, après la ligne `website: ...`
+    image: (() => {
+      const img = safeUrl(pickString(raw, IMAGE_KEYS));
+      return img?.startsWith("https:") ? img : null; // images en https uniquement
+    })(),
   };
 }
 
