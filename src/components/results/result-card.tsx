@@ -40,8 +40,10 @@ export function ResultCard({
         selected ? "border-primary ring-1 ring-primary" : "border-border"
       )}
     >
-      {/* Image + sélection + badges */}
-      <div className="relative aspect-4/3 bg-muted">
+      {/* Image + sélection + badges
+          Boîte au ratio fixe 4:3 ; l'image est en position absolue pour ne jamais
+          influencer la hauteur de la boîte, quelles que soient ses dimensions d'origine. */}
+      <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden bg-muted">
         {result.image && !imageBroken ? (
           // <img> volontaire : les images viennent de domaines variés selon l'Actor
           // eslint-disable-next-line @next/next/no-img-element
@@ -51,10 +53,10 @@ export function ResultCard({
             loading="lazy"
             referrerPolicy="no-referrer"
             onError={() => setImageBroken(true)}
-            className="size-full object-cover"
+            className="absolute inset-0 size-full object-cover"
           />
         ) : (
-          <div className="grid size-full place-items-center text-muted-foreground">
+          <div className="absolute inset-0 grid place-items-center text-muted-foreground">
             <ImageOff className="size-8" />
           </div>
         )}
