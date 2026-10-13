@@ -1,6 +1,7 @@
+// src/components/results/results-explorer.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
   type Filters,
   type SortKey,
 } from "@/lib/explore-results";
+import { useExplorerState } from "@/hooks/use-explorer-state";
 import { ResultCard } from "./result-card";
 
 const PAGE_SIZE = 12;
@@ -27,17 +29,22 @@ const FILTER_LABELS: Record<keyof Filters, string> = {
   withSocial: "Avec réseau social",
 };
 
-export function ResultsExplorer({ items, total }: { items: unknown[]; total: number | null }) {
+export function ResultsExplorer({
+  runId,
+  items,
+  total,
+}: {
+  runId: string;
+  items: unknown[];
+  total: number | null;
+}) {
   // Normalisation calculée une seule fois par jeu de résultats
   const results = useMemo(() => normalizeResults(items), [items]);
   const counts = useMemo(() => countFilters(results), [results]);
 
-  const [query, setQuery] = useState("");
-  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
-  const [sort, setSort] = useState<SortKey>("default");
-  const [page, setPage] = useState(1);
-  // Sélection par numéro d'élément : elle survit aux changements de filtre, de tri et de page
-  const [selected, setSelected] = useState<Set<number>>(() => new Set());
+  // Recherche, filtres, tri, page et sélection : dans le store (survivent à la navigation)
+  const [ui, setUi] = useExplorerState(runId);
+  const { query, filters, sort, page, selected } = ui;
 
   const filtered = useMemo(
     () => exploreResults(results, query, filters, sort),
@@ -49,26 +56,23 @@ export function ResultsExplorer({ items, total }: { items: unknown[]; total: num
   const hasActiveFilter = query.trim() !== "" || Object.values(filters).some(Boolean);
 
   const toggleOne = (index: number) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
+    setUi((s) => {
+      const next = new Set(s.selected);
       if (!next.delete(index)) next.add(index);
-      return next;
+      return { selected: next };
     });
 
   const togglePage = () =>
-    setSelected((prev) => {
-      const next = new Set(prev);
+    setUi((s) => {
+      const next = new Set(s.selected);
       view.items.forEach((r) => (pageAllSelected ? next.delete(r.index) : next.add(r.index)));
-      return next;
+      return { selected: next };
     });
 
-  const selectAllFiltered = () => setSelected((prev) => new Set([...prev, ...filtered.map((r) => r.index)]));
+  const selectAllFiltered = () =>
+    setUi((s) => ({ selected: new Set([...s.selected, ...filtered.map((r) => r.index)]) }));
 
-  const resetFilters = () => {
-    setQuery("");
-    setFilters(NO_FILTERS);
-    setPage(1);
-  };
+  const resetFilters = () => setUi({ query: "", filters: NO_FILTERS, page: 1 });
 
   return (
     <div className="space-y-4">
@@ -80,10 +84,7 @@ export function ResultsExplorer({ items, total }: { items: unknown[]; total: num
           </span>
           <Input
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => setUi({ query: e.target.value, page: 1 })}
             placeholder="Rechercher dans les résultats…"
             aria-label="Rechercher dans les résultats"
             className="h-10 pl-10"
@@ -91,10 +92,7 @@ export function ResultsExplorer({ items, total }: { items: unknown[]; total: num
         </div>
         <select
           value={sort}
-          onChange={(e) => {
-            setSort(e.target.value as SortKey);
-            setPage(1);
-          }}
+          onChange={(e) => setUi({ sort: e.target.value as SortKey, page: 1 })}
           aria-label="Trier les résultats"
           className="h-10 border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring"
         >
@@ -111,10 +109,7 @@ export function ResultsExplorer({ items, total }: { items: unknown[]; total: num
             key={key}
             type="button"
             aria-pressed={filters[key]}
-            onClick={() => {
-              setFilters((f) => ({ ...f, [key]: !f[key] }));
-              setPage(1);
-            }}
+            onClick={() => setUi((s) => ({ filters: { ...s.filters, [key]: !s.filters[key] }, page: 1 }))}
             className={cn(
               "border px-3 py-1.5 text-sm transition-colors",
               filters[key] ? "border-primary bg-accent font-medium text-primary" : "border-border hover:bg-muted"
@@ -154,7 +149,7 @@ export function ResultsExplorer({ items, total }: { items: unknown[]; total: num
             </button>
           )}
           {selected.size > 0 && (
-            <button type="button" onClick={() => setSelected(new Set())} className="text-muted-foreground hover:text-foreground">
+            <button type="button" onClick={() => setUi({ selected: new Set() })} className="text-muted-foreground hover:text-foreground">
               Tout désélectionner
             </button>
           )}
@@ -171,7 +166,13 @@ export function ResultsExplorer({ items, total }: { items: unknown[]; total: num
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {view.items.map((r) => (
-            <ResultCard key={r.index} result={r} selected={selected.has(r.index)} onToggle={() => toggleOne(r.index)} />
+            <ResultCard
+              key={r.index}
+              result={r}
+              href={`/searches/${runId}/results/${r.index}`}
+              selected={selected.has(r.index)}
+              onToggle={() => toggleOne(r.index)}
+            />
           ))}
         </div>
       )}
@@ -179,11 +180,11 @@ export function ResultsExplorer({ items, total }: { items: unknown[]; total: num
       {/* Pagination */}
       {view.pageCount > 1 && (
         <nav aria-label="Pagination" className="flex items-center justify-center gap-3 pt-2">
-          <Button variant="outline" size="icon" disabled={view.page <= 1} onClick={() => setPage(view.page - 1)} aria-label="Page précédente">
+          <Button variant="outline" size="icon" disabled={view.page <= 1} onClick={() => setUi({ page: view.page - 1 })} aria-label="Page précédente">
             <ChevronLeft className="size-4" />
           </Button>
           <span className="text-sm text-muted-foreground">Page {view.page} / {view.pageCount}</span>
-          <Button variant="outline" size="icon" disabled={view.page >= view.pageCount} onClick={() => setPage(view.page + 1)} aria-label="Page suivante">
+          <Button variant="outline" size="icon" disabled={view.page >= view.pageCount} onClick={() => setUi({ page: view.page + 1 })} aria-label="Page suivante">
             <ChevronRight className="size-4" />
           </Button>
         </nav>

@@ -5,6 +5,7 @@ import { Check, Copy, ExternalLink, Globe, ImageOff, Mail, Phone, Star } from "l
 import { cn } from "@/lib/utils";
 import { hostOf } from "@/lib/normalize-results";
 import type { NormalizedResult, SocialNetwork } from "@/types/results";
+import Link from "next/link";
 
 const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   linkedin: "LinkedIn",
@@ -18,10 +19,12 @@ const SOCIAL_LABELS: Record<SocialNetwork, string> = {
 // Tout le contenu vient d'Apify : il est affiché comme du TEXTE (React l'échappe), jamais comme du HTML.
 export function ResultCard({
   result,
+  href,
   selected,
   onToggle,
 }: {
   result: NormalizedResult;
+  href: string; // page de détail
   selected: boolean;
   onToggle: () => void;
 }) {
@@ -44,27 +47,28 @@ export function ResultCard({
           Boîte au ratio fixe 4:3 ; l'image est en position absolue pour ne jamais
           influencer la hauteur de la boîte, quelles que soient ses dimensions d'origine. */}
       <div className="relative aspect-4/3 w-full shrink-0 overflow-hidden bg-muted">
-        {result.image && !imageBroken ? (
-          // <img> volontaire : les images viennent de domaines variés selon l'Actor
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={result.image}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            onError={() => setImageBroken(true)}
-            className="absolute inset-0 size-full object-cover"
-          />
-        ) : (
-          <div className="absolute inset-0 grid place-items-center text-muted-foreground">
-            <ImageOff className="size-8" />
-          </div>
-        )}
-        <div className="absolute left-2 top-2">
+        <Link href={href} aria-label={`Voir la fiche de ${name}`} className="absolute inset-0 block">
+          {result.image && !imageBroken ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={result.image}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setImageBroken(true)}
+              className="absolute inset-0 size-full object-cover"
+            />
+          ) : (
+            <div className="absolute inset-0 grid place-items-center text-muted-foreground">
+              <ImageOff className="size-8" />
+            </div>
+          )}
+        </Link>
+        <div className="absolute left-2 top-2 z-10">
           <SelectBox checked={selected} onChange={onToggle} label={`Sélectionner ${name}`} />
         </div>
         {(permanentlyClosed || temporarilyClosed) && (
-          <span className="absolute right-2 top-2 bg-destructive px-2 py-1 text-xs font-medium text-white">
+          <span className="pointer-events-none absolute right-2 top-2 bg-destructive px-2 py-1 text-xs font-medium text-white">
             {permanentlyClosed ? "Fermé définitivement" : "Fermé temporairement"}
           </span>
         )}
@@ -72,7 +76,9 @@ export function ResultCard({
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="space-y-1.5">
-          <h3 className="line-clamp-2 font-medium leading-snug">{name}</h3>
+          <h3 className="line-clamp-2 font-medium leading-snug">
+            <Link href={href} className="hover:text-primary hover:underline">{name}</Link>
+          </h3>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             {result.category && <span>{result.category}</span>}
             {result.rating !== null && (
@@ -171,7 +177,7 @@ function SelectBox({ checked, onChange, label }: { checked: boolean; onChange: (
   );
 }
 
-function CopyButton({ value, label }: { value: string; label: string }) {
+export function CopyButton({ value, label }: { value: string; label: string }) {
   const [done, setDone] = useState(false);
 
   async function copy() {

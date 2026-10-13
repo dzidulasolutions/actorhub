@@ -131,7 +131,7 @@ export function RunPage({ runId }: { runId: string }) {
               </p>
             </div>
           ) : (
-            <ResultsExplorer items={search.items} total={search.total} />
+            <ResultsExplorer runId={runId} items={search.items} total={search.total} />
           )}
         </section>
       </div>
