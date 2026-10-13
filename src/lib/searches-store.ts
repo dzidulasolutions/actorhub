@@ -111,3 +111,10 @@ async function poll(id: string) {
     error: "Suivi interrompu après 15 minutes. La collecte peut continuer sur Apify.",
   });
 }
+
+/** Ajoute en mémoire une recherche déjà terminée (sauvegarde rouverte, fichier importé). */
+export function hydrateSearch(record: SearchRecord): void {
+  if (searches.some((s) => s.id === record.id)) return; // déjà là
+  searches = [record, ...searches];
+  emit();
+}
