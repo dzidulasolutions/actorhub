@@ -27,12 +27,55 @@ describe("safeUrl", () => {
 });
 
 describe("normalizeResult", () => {
-  it("garde l'objet original intact et reconnaît les champs courants", () => {
-    const item = { title: "Resto", address: "Lomé", url: "https://x.com", custom: { a: 1 } };
+  it("reconnaît une fiche de type Google Maps", () => {
+    const item = {
+      title: "Chez Mario",
+      address: "Rue 12, Lomé",
+      categoryName: "Italian Restaurant",
+      totalScore: 4.6,
+      reviewsCount: 120,
+      website: "trattoria.example.com", // domaine nu → https:// ajouté
+      phone: "+228 90 00 00 00",
+      url: "https://www.google.com/maps/place/x",
+      emails: ["contact@trattoria.example.com"],
+    };
+    const r = normalizeResult(item, 0);
+    expect(r.title).toBe("Chez Mario");
+    expect(r.category).toBe("Italian Restaurant");
+    expect(r.rating).toBe(4.6);
+    expect(r.reviewsCount).toBe(120);
+    expect(r.website).toBe("https://trattoria.example.com/");
+    expect(r.phones).toEqual(["+228 90 00 00 00"]);
+    expect(r.emails).toEqual(["contact@trattoria.example.com"]);
+    expect(r.url).toBe("https://www.google.com/maps/place/x");
+  });
+
+  it("reconnaît une fiche de type Contact Details (tableaux de réseaux sociaux)", () => {
+    const item = {
+      url: "https://apify.com",
+      domain: "apify.com",
+      emails: ["hello@apify.com"],
+      phones: [],
+      linkedIns: ["https://www.linkedin.com/company/apify"],
+      facebooks: [],
+    };
+    const r = normalizeResult(item, 1);
+    expect(r.title).toBeNull(); // pas de titre : l'interface se rabattra sur le site
+    expect(r.website).toBe("https://apify.com/");
+    expect(r.emails).toEqual(["hello@apify.com"]);
+    expect(r.socials).toEqual([
+      { network: "linkedin", url: "https://www.linkedin.com/company/apify" },
+    ]);
+  });
+
+  it("prend la première catégorie d'un tableau", () => {
+    expect(normalizeResult({ categories: ["Café", "Bar"] }, 0).category).toBe("Café");
+  });
+
+  it("garde l'objet original intact", () => {
+    const item = { title: "Resto", custom: { a: 1 } };
     const r = normalizeResult(item, 3);
     expect(r.index).toBe(3);
-    expect(r.title).toBe("Resto");
-    expect(r.subtitle).toBe("Lomé");
     expect(r.raw).toBe(item); // même référence : rien n'est copié ni supprimé
     expect(r.raw.custom).toEqual({ a: 1 });
   });
