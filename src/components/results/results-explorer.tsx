@@ -2,10 +2,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { IconlySearch, IconlyDownload } from "@/components/icons/iconly";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { IconlySearch } from "@/components/icons/iconly";
 import { cn } from "@/lib/utils";
 import { normalizeResults } from "@/lib/normalize-results";
 import {
@@ -131,14 +131,24 @@ export function ResultsExplorer({
       {/* Compteur + sélection */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
 
-        <button
-          type="button"
-          onClick={() => setExportOpen((o) => !o)}
-          aria-expanded={exportOpen}
-          className="font-medium text-primary hover:underline"
-        >
-          {exportOpen ? "Fermer l'export" : "Exporter"}
-        </button>
+          <Button
+            type="button"
+            variant={exportOpen ? "outline" : "default"}
+            onClick={() => setExportOpen((o) => !o)}
+            aria-expanded={exportOpen}
+            className="h-9 gap-2 px-4"
+          >
+            {exportOpen ? (
+              <>
+                <X className="size-4" /> Fermer l&apos;export
+              </>
+            ) : (
+              <>
+                <IconlyDownload size={18} color="currentColor" />
+                {selected.size > 0 ? `Exporter (${selected.size})` : "Exporter"}
+              </>
+            )}
+          </Button>
 
         <p className="text-muted-foreground">
           {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
