@@ -1,7 +1,7 @@
 // src/components/results/results-explorer.tsx
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,10 @@ import {
 } from "@/lib/explore-results";
 import { useExplorerState } from "@/hooks/use-explorer-state";
 import { ResultCard } from "./result-card";
+import { ExportPanel } from "./export-panel";
+import type { ExportMeta } from "@/lib/export-json";
+
+
 
 const PAGE_SIZE = 12;
 
@@ -30,13 +34,12 @@ const FILTER_LABELS: Record<keyof Filters, string> = {
 };
 
 export function ResultsExplorer({
-  runId,
-  items,
-  total,
+  runId, items, total, meta,
 }: {
   runId: string;
   items: unknown[];
   total: number | null;
+  meta: ExportMeta;
 }) {
   // Normalisation calculée une seule fois par jeu de résultats
   const results = useMemo(() => normalizeResults(items), [items]);
@@ -45,7 +48,7 @@ export function ResultsExplorer({
   // Recherche, filtres, tri, page et sélection : dans le store (survivent à la navigation)
   const [ui, setUi] = useExplorerState(runId);
   const { query, filters, sort, page, selected } = ui;
-
+  const [exportOpen, setExportOpen] = useState(false);
   const filtered = useMemo(
     () => exploreResults(results, query, filters, sort),
     [results, query, filters, sort]
@@ -127,6 +130,16 @@ export function ResultsExplorer({
 
       {/* Compteur + sélection */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+
+        <button
+          type="button"
+          onClick={() => setExportOpen((o) => !o)}
+          aria-expanded={exportOpen}
+          className="font-medium text-primary hover:underline"
+        >
+          {exportOpen ? "Fermer l'export" : "Exporter"}
+        </button>
+
         <p className="text-muted-foreground">
           {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
           {filtered.length !== results.length && ` sur ${results.length}`}
@@ -155,6 +168,14 @@ export function ResultsExplorer({
           )}
         </div>
       </div>
+        {exportOpen && (
+        <ExportPanel
+          items={items}
+          filteredIndexes={filtered.map((r) => r.index)}
+          selected={selected}
+          meta={meta}
+        />
+      )}
 
       {/* Grille */}
       {view.items.length === 0 ? (

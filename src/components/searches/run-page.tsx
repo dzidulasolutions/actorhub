@@ -131,7 +131,20 @@ export function RunPage({ runId }: { runId: string }) {
               </p>
             </div>
           ) : (
-            <ResultsExplorer runId={runId} items={search.items} total={search.total} />
+            <ResultsExplorer
+              runId={runId}
+              items={search.items}
+              total={search.total}
+              meta={{
+                actorId: search.apifyId,
+                actorName: search.actorName,
+                runId: search.id,
+                datasetId: search.datasetId,
+                startedAt: search.startedAt,
+                finishedAt: search.finishedAt,
+                input: search.input,
+              }}
+            />
           )}
         </section>
       </div>
