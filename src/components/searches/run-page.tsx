@@ -15,7 +15,7 @@ import { RunSkeleton } from "./run-skeleton";
 import { StatusBadge } from "./status-badge";
 import { ResultsExplorer } from "@/components/results/results-explorer";
 import { ResultsGridSkeleton } from "@/components/results/results-grid-skeleton";
-
+import { SaveButton } from "./save-button";
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -71,13 +71,19 @@ export function RunPage({ runId }: { runId: string }) {
       <PageHeader
         title={search.actorName}
         description={`Run ${search.id}`}
-        actions={
+                actions={
           active ? (
             <Button variant="outline" onClick={handleAbort} disabled={aborting} className="h-9">
               {aborting ? "Interruption…" : "Interrompre"}
             </Button>
           ) : (
-            <Button nativeButton={false} render={<Link href="/searches/new" />} className="h-9">Nouvelle recherche</Button>
+            <>
+              {/* Sauvegardable dès que les résultats sont chargés */}
+              {search.items !== null && <SaveButton search={search} />}
+              <Button render={<Link href="/searches/new" />} nativeButton={false} className="h-9">
+                Nouvelle recherche
+              </Button>
+            </>
           )
         }
       />
