@@ -13,6 +13,9 @@ import { isFinal, type RunStatus } from "@/lib/run-status";
 import { cn } from "@/lib/utils";
 import { RunSkeleton } from "./run-skeleton";
 import { StatusBadge } from "./status-badge";
+import { ResultsExplorer } from "@/components/results/results-explorer";
+import { ResultsGridSkeleton } from "@/components/results/results-grid-skeleton";
+
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -39,7 +42,7 @@ export function RunPage({ runId }: { runId: string }) {
             Cette recherche n&apos;est plus en mémoire (la page a été rechargée). Les
             collectes restent consultables sur Apify ; l&apos;historique local arrive plus tard.
           </p>
-          <Button render={<Link href="/searches/new" />} className="h-10">Nouvelle recherche</Button>
+          <Button nativeButton={false} render={<Link href="/searches/new" />} className="h-10">Nouvelle recherche</Button>
         </div>
       </>
     );
@@ -74,7 +77,7 @@ export function RunPage({ runId }: { runId: string }) {
               {aborting ? "Interruption…" : "Interrompre"}
             </Button>
           ) : (
-            <Button render={<Link href="/searches/new" />} className="h-9">Nouvelle recherche</Button>
+            <Button nativeButton={false} render={<Link href="/searches/new" />} className="h-9">Nouvelle recherche</Button>
           )
         }
       />
@@ -101,18 +104,24 @@ export function RunPage({ runId }: { runId: string }) {
         )}
 
         {/* Zone résultats : suit l'état du run */}
-        <section className="border border-border">
+        {/* Zone résultats : suit l'état du run */}
+        <section>
           {active ? (
-            <div className="flex items-center gap-3 p-6 text-sm text-muted-foreground">
-              <span className="animate-spin text-primary"><IconlyLoader size={20} color="currentColor" /></span>
-              Collecte en cours… les résultats apparaîtront ici automatiquement.
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 border border-border p-4 text-sm text-muted-foreground">
+                <span className="animate-spin text-primary"><IconlyLoader size={20} color="currentColor" /></span>
+                Collecte en cours… les résultats apparaîtront ici automatiquement.
+              </div>
+              <ResultsGridSkeleton count={4} />
             </div>
           ) : search.items === null ? (
-            <div className="p-6 text-sm text-muted-foreground">
-              {search.error ? "Résultats indisponibles." : "Récupération des résultats…"}
-            </div>
+            search.error ? (
+              <p className="border border-border p-6 text-sm text-muted-foreground">Résultats indisponibles.</p>
+            ) : (
+              <ResultsGridSkeleton />
+            )
           ) : search.items.length === 0 ? (
-            <div className="grid place-items-center gap-2 p-10 text-center">
+            <div className="grid place-items-center gap-2 border border-border p-10 text-center">
               <span className="grid size-10 place-items-center bg-muted"><IconlyDocument size={20} color="currentColor" /></span>
               <p className="font-medium">Aucun résultat</p>
               <p className="max-w-sm text-sm text-muted-foreground">
@@ -122,19 +131,7 @@ export function RunPage({ runId }: { runId: string }) {
               </p>
             </div>
           ) : (
-            <div className="space-y-3 p-4">
-              <p className="text-sm font-medium">
-                {count} résultat{count! > 1 ? "s" : ""} récupéré{count! > 1 ? "s" : ""}
-                {search.total != null && search.total > count! && ` sur ${search.total}`}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Aperçu du premier élément (objet original d&apos;Apify). Le tableau d&apos;exploration arrive à l&apos;étape suivante.
-              </p>
-              {/* Affiché comme du texte : jamais interprété comme du HTML */}
-              <pre className="max-h-96 overflow-auto bg-muted p-4 font-mono text-xs">
-                {JSON.stringify(search.items[0], null, 2)}
-              </pre>
-            </div>
+            <ResultsExplorer items={search.items} total={search.total} />
           )}
         </section>
       </div>
@@ -165,7 +162,7 @@ function Steps({ status }: { status: RunStatus }) {
             i < current && "border-black bg-black text-white",
             i === current && (status === "failed" ? "border-destructive bg-destructive text-white"
               : status === "aborted" ? "border-highlight bg-highlight text-black"
-              : "border-primary bg-primary text-white"),
+                : "border-primary bg-primary text-white"),
             i > current && "border-border text-muted-foreground"
           )}>{i + 1}</span>
           <span className={cn("text-sm", i > current && "text-muted-foreground")}>{label}</span>

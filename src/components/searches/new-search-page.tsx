@@ -38,7 +38,7 @@ export function NewSearchPage() {
                 Configure ou active un Actor pour pouvoir lancer une recherche.
               </p>
             </div>
-            <Button render={<Link href="/actors" />} className="h-10">Gérer mes Actors</Button>
+            <Button nativeButton={false} render={<Link href="/actors" />} className="h-10">Gérer mes Actors</Button>
           </div>
         </div>
       ) : (
