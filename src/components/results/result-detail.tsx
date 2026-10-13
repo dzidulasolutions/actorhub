@@ -50,7 +50,7 @@ const toCopy = (v: unknown) => (typeof v === "string" ? v : JSON.stringify(v, nu
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-4 border border-border bg-card p-4 sm:p-5">
+    <section className="min-w-0 ">
       <h2 className="text-sm font-semibold">{title}</h2>
       {children}
     </section>
@@ -111,7 +111,7 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
   const hours = openingHours(raw);
   const closed =
     raw.permanentlyClosed === true ? "Fermé définitivement"
-    : raw.temporarilyClosed === true ? "Fermé temporairement" : null;
+      : raw.temporarilyClosed === true ? "Fermé temporairement" : null;
 
   const toggleSelected = () =>
     setUi((s) => {
@@ -160,7 +160,8 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
           <ArrowLeft className="size-4" /> Retour aux résultats
         </Link>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+
           {/* ===== Colonne principale ===== */}
           <div className="min-w-0 space-y-6">
             <Section title="Contact">
@@ -192,8 +193,7 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
                 {website ? (
                   <div className="flex items-center gap-3 text-sm">
                     <Globe className="size-4 shrink-0 text-muted-foreground" />
-                    <a href={website} target="_blank" rel="noopener noreferrer" className="min-w-0 flex-1 truncate hover:underline">{website}</a>
-                    {result.websiteIsDirectory && (
+                    <a href={website} target="_blank" rel="noopener noreferrer" title={website} className="min-w-0 flex-1 truncate hover:underline">{website}</a>                    {result.websiteIsDirectory && (
                       <span className="shrink-0 bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">Annuaire</span>
                     )}
                     <CopyButton value={website} label="Copier le lien" />
@@ -251,14 +251,14 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
               {hours && (
                 <div className="space-y-2 border-t border-border pt-4">
                   <p className="flex items-center gap-2 text-sm font-medium"><Clock className="size-4" /> Horaires</p>
-                  <dl className="grid gap-1 text-sm sm:grid-cols-[120px_1fr]">
+                    <div className="grid gap-1 sm:grid-cols-[120px_minmax(0,1fr)] sm:gap-4">
                     {hours.map((h) => (
                       <div key={h.day} className="contents">
                         <dt className="capitalize text-muted-foreground">{h.day}</dt>
                         <dd>{h.hours}</dd>
                       </div>
                     ))}
-                  </dl>
+                  </div>
                 </div>
               )}
             </Section>
@@ -286,7 +286,7 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
               ) : (
                 <dl className="divide-y divide-border">
                   {fields.map(([key, value]) => (
-                    <div key={key} className="grid gap-1 py-3 sm:grid-cols-[minmax(0,180px)_1fr_auto] sm:gap-4">
+                    <div key={key} className="grid gap-1 py-3 sm:grid-cols-[minmax(0,180px)_minmax(0,1fr)_auto] sm:gap-4">
                       <dt className="wrap-words font-mono text-xs text-muted-foreground">{key}</dt>
                       <dd className="min-w-0 text-sm"><JsonValue value={value} /></dd>
                       <div className="sm:justify-self-end">

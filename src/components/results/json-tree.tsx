@@ -1,3 +1,6 @@
+import { safeUrl } from "@/lib/normalize-results";
+import { CopyButton } from "./result-card";
+
 const MAX_ITEMS = 50; // au-delà, on renvoie vers le JSON brut
 const MAX_DEPTH = 6;
 
@@ -20,13 +23,34 @@ export function JsonValue({ value, depth = 0 }: { value: unknown; depth?: number
   if (typeof value === "boolean" || typeof value === "number") {
     return <span className="font-mono text-xs">{String(value)}</span>;
   }
-  if (typeof value === "string") {
-    return value === "" ? (
-      <span className="text-muted-foreground">(vide)</span>
-    ) : (
-      <span className="wrap-words [wrap-anywhere]">{value}</span>
-    );
+    if (typeof value === "string") {
+    if (value === "") return <span className="text-muted-foreground">(vide)</span>;
+    // URL longue : une seule ligne, fin coupée par "…", lien complet au survol
+    if (/^https?:\/\//i.test(value) && value.length > 40) {
+      const href = safeUrl(value);
+      return (
+        <span className="flex min-w-0 items-center gap-1">
+          {href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={value}
+              className="block min-w-0 flex-1 truncate text-primary hover:underline"
+            >
+              {value}
+            </a>
+          ) : (
+            <span title={value} className="block min-w-0 flex-1 truncate">{value}</span>
+          )}
+          {/* Les champs de premier niveau ont déjà leur bouton copier dans la page */}
+          {depth > 0 && <CopyButton value={value} label="Copier le lien" />}
+        </span>
+      );
+    }
+    return <span className="wrap-words wrap-anywhere">{value}</span>;
   }
+
   if (depth >= MAX_DEPTH) {
     return (
       <span className="font-mono text-xs text-muted-foreground">
@@ -51,7 +75,7 @@ export function JsonValue({ value, depth = 0 }: { value: unknown; depth?: number
       </summary>
       <dl className="mt-2 space-y-2 border-l border-border pl-3">
         {entries.slice(0, MAX_ITEMS).map(([k, v]) => (
-          <div key={k} className="grid gap-1 sm:grid-cols-[minmax(0,140px)_1fr]">
+                    <div key={k} className="grid gap-1 sm:grid-cols-[minmax(0,140px)_minmax(0,1fr)]">
             <dt className="wrap-words font-mono text-xs text-muted-foreground">{k}</dt>
             <dd className="min-w-0 text-sm">
               <JsonValue value={v} depth={depth + 1} />

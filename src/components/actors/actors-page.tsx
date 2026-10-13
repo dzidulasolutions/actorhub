@@ -28,6 +28,7 @@ export function ActorsPage() {
     actor: null,
   });
   const [toDelete, setToDelete] = useState<ActorConfig | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   if (!ready) return <ActorsSkeleton />;
 
@@ -68,7 +69,10 @@ export function ActorsPage() {
                 actor={a}
                 onToggle={() => toggle(a.id)}
                 onEdit={() => setSheet({ open: true, actor: a })}
-                onDelete={() => setToDelete(a)}
+                onDelete={() => {
+                  setToDelete(a);
+                  setDeleteOpen(true);
+                }}
               />
             ))}
           </div>
@@ -89,7 +93,7 @@ export function ActorsPage() {
       />
 
       {/* Confirmation avant suppression : action irréversible */}
-      <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer « {toDelete?.name} » ?</AlertDialogTitle>
@@ -100,8 +104,11 @@ export function ActorsPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => toDelete && remove(toDelete.id)}
+             <AlertDialogAction
+              onClick={() => {
+                if (toDelete) remove(toDelete.id);
+                setDeleteOpen(false);
+              }}
               className="bg-destructive text-white hover:bg-destructive/90"
             >
               Supprimer
