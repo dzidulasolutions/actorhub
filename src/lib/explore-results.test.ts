@@ -1,0 +1,45 @@
+import { describe, expect, it } from "vitest";
+import { exploreResults, NO_FILTERS, paginate } from "./explore-results";
+import { normalizeResult } from "./normalize-results";
+
+const data = [
+  normalizeResult({ title: "Hôtel Le Lac", categoryName: "Hôtel", totalScore: 4.1, reviewsCount: 50, emails: ["a@lac.tg"] }, 0),
+  normalizeResult({ title: "Café Zéro", totalScore: 4.8, reviewsCount: 10, phone: "+228 90 00 00 00" }, 1),
+  normalizeResult({ title: "Abeille" }, 2),
+];
+
+describe("exploreResults", () => {
+  it("cherche sans tenir compte des accents ni de la casse", () => {
+    expect(exploreResults(data, "HOTEL", NO_FILTERS, "default").map((r) => r.index)).toEqual([0]);
+  });
+
+  it("filtre sur la présence d'un email", () => {
+    const r = exploreResults(data, "", { ...NO_FILTERS, withEmail: true }, "default");
+    expect(r.map((x) => x.index)).toEqual([0]);
+  });
+
+  it("trie par note décroissante, valeurs absentes en dernier", () => {
+    expect(exploreResults(data, "", NO_FILTERS, "rating").map((r) => r.index)).toEqual([1, 0, 2]);
+  });
+
+  it("trie par nom", () => {
+    expect(exploreResults(data, "", NO_FILTERS, "name").map((r) => r.title)).toEqual([
+      "Abeille", "Café Zéro", "Hôtel Le Lac",
+    ]);
+  });
+
+  it("ne modifie pas le tableau d'origine", () => {
+    exploreResults(data, "", NO_FILTERS, "name");
+    expect(data.map((r) => r.index)).toEqual([0, 1, 2]);
+  });
+});
+
+describe("paginate", () => {
+  it("découpe et borne la page demandée", () => {
+    const items = Array.from({ length: 25 }, (_, i) => i);
+    expect(paginate(items, 1, 12).items).toHaveLength(12);
+    expect(paginate(items, 3, 12).items).toEqual([24]);
+    expect(paginate(items, 99, 12).page).toBe(3); // page trop grande → dernière page
+    expect(paginate([], 1, 12).pageCount).toBe(1);
+  });
+});

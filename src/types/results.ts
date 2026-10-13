@@ -30,4 +30,5 @@ export interface NormalizedResult {
   socials: SocialLink[];
   date: string | null;
   image: string | null; // photo https (couverture de la carte)
+  websiteIsDirectory: boolean; // le "site" est un annuaire ou un réseau social, pas le site de l'entreprise
 }

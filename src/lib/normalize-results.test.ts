@@ -106,5 +106,21 @@ describe("normalizeResult", () => {
     expect(r.website).toBeNull();
     expect(r.image).toBe("https://lh3.googleusercontent.com/x");
   });
+
+    it("reconnaît un annuaire comme site et ignore les numéros incertains", () => {
+    const item = {
+      title: "Royal Hotel",
+      website: "https://www.goafricaonline.com/tg/4711-royal-hotels-lome-togo",
+      phone: "+228 70 26 92 77",
+      phonesUncertain: ["79 87 12 04", "93 54 26 14"], // numéros de la page de l'annuaire
+      facebooks: ["https://www.facebook.com/ShafRoyalhotel"],
+      emails: [],
+    };
+    const r = normalizeResult(item, 0);
+    expect(r.websiteIsDirectory).toBe(true);
+    expect(r.phones).toEqual(["+228 70 26 92 77"]);
+    expect(r.socials).toEqual([{ network: "facebook", url: "https://www.facebook.com/ShafRoyalhotel" }]);
+    expect(r.emails).toEqual([]);
+  });
   
 });

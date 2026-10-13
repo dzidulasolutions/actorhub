@@ -27,6 +27,11 @@ const FAKE_TLDS = new Set(["png", "jpg", "jpeg", "gif", "webp", "svg", "css", "j
 const MAX_DEPTH = 5;
 const MAX_NODES = 500; // garde-fou sur les objets énormes
 
+const DIRECTORY_HOSTS = [
+  "goafricaonline.com", "facebook.com", "instagram.com", "linkedin.com", "tiktok.com",
+  "booking.com", "tripadvisor.com", "tripadvisor.fr", "yelp.com", "pagesjaunes.fr", "linktr.ee",
+];
+
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
@@ -160,10 +165,26 @@ function pickSocials(obj: Record<string, unknown>): SocialLink[] {
   return out;
 }
 
+export function hostOf(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+const isDirectoryHost = (url: string | null) => {
+  const host = hostOf(url);
+  return !!host && DIRECTORY_HOSTS.some((d) => host === d || host.endsWith(`.${d}`));
+};
+
 /** Transforme un élément Apify en fiche standard. `raw` n'est jamais modifié. */
 export function normalizeResult(item: unknown, index: number): NormalizedResult {
   // Un élément qui n'est pas un objet (rare) est conservé dans { value }
   const raw: Record<string, unknown> = isObject(item) ? item : { value: item };
+    const website = normalizeWebsite(pickString(raw, WEBSITE_KEYS));
+
   return {
     index,
     raw,
@@ -174,7 +195,8 @@ export function normalizeResult(item: unknown, index: number): NormalizedResult 
     reviewsCount: pickNumber(raw, REVIEWS_KEYS),
     description: pickString(raw, DESC_KEYS),
     url: safeUrl(pickString(raw, URL_KEYS)),
-    website: normalizeWebsite(pickString(raw, WEBSITE_KEYS)),
+         website,
+    websiteIsDirectory: isDirectoryHost(website),
     emails: extractEmails(raw),
     phones: pickPhones(raw),
     socials: pickSocials(raw),
@@ -184,6 +206,7 @@ export function normalizeResult(item: unknown, index: number): NormalizedResult 
       const img = safeUrl(pickString(raw, IMAGE_KEYS));
       return img?.startsWith("https:") ? img : null; // images en https uniquement
     })(),
+
   };
 }
 
