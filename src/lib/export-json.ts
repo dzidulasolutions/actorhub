@@ -2,7 +2,7 @@
 
 export type ExportScope = "all" | "selected" | "filtered";
 export type ExportMode = "original" | "wrapped";
-
+import type { SearchRecord } from "@/types/search";
 // Métadonnées de la collecte, ajoutées à l'export enveloppé
 export interface ExportMeta {
   actorId: string;
@@ -81,4 +81,17 @@ export function downloadJson(data: unknown, filename: string): void {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000); // libère la mémoire
+}
+
+/** Métadonnées d'export d'une recherche (utilisé par la page de suivi et la page Résultats). */
+export function metaFromSearch(s: SearchRecord): ExportMeta {
+  return {
+    actorId: s.apifyId,
+    actorName: s.actorName,
+    runId: s.id,
+    datasetId: s.datasetId,
+    startedAt: s.startedAt,
+    finishedAt: s.finishedAt,
+    input: s.input,
+  };
 }

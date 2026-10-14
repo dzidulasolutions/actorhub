@@ -16,6 +16,7 @@ import { StatusBadge } from "./status-badge";
 import { ResultsExplorer } from "@/components/results/results-explorer";
 import { ResultsGridSkeleton } from "@/components/results/results-grid-skeleton";
 import { SaveButton } from "./save-button";
+import { metaFromSearch } from "@/lib/export-json";
 
 const mmss = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -141,15 +142,7 @@ export function RunPage({ runId }: { runId: string }) {
               runId={runId}
               items={search.items}
               total={search.total}
-              meta={{
-                actorId: search.apifyId,
-                actorName: search.actorName,
-                runId: search.id,
-                datasetId: search.datasetId,
-                startedAt: search.startedAt,
-                finishedAt: search.finishedAt,
-                input: search.input,
-              }}
+              meta={metaFromSearch(search)}
             />
           )}
         </section>
