@@ -10,17 +10,19 @@ import { cn } from "@/lib/utils";
 import { CATEGORY_LABELS } from "@/types/actor";
 import { NewSearchSkeleton } from "./new-search-skeleton";
 import { SearchForm } from "./search-form";
+import { useSearchParams } from "next/navigation";
 
 export function NewSearchPage() {
   const { actors, ready } = useActors();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const preselected = useSearchParams().get("actor"); // présent quand on arrive depuis le Dashboard
   if (!ready) return <NewSearchSkeleton />;
 
   // Seuls les Actors activés sont proposés ; par défaut le premier
-  const enabled = actors.filter((a) => a.enabled);
-  const actor = enabled.find((a) => a.id === selectedId) ?? enabled[0];
 
+  const enabled = actors.filter((a) => a.enabled);
+  const actor = enabled.find((a) => a.id === (selectedId ?? preselected)) ?? enabled[0];
   return (
     <>
       <PageHeader title="Nouvelle recherche" description="Choisis un Actor, règle ses paramètres, lance la collecte" />

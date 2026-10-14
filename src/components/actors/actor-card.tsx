@@ -11,7 +11,7 @@ import {
 import { CATEGORY_LABELS, type ActorConfig } from "@/types/actor";
 
 // Une icône par catégorie (tirée de ton jeu Iconly)
-const CATEGORY_ICONS = {
+export const CATEGORY_ICONS = {
   maps: IconlyLocation2,
   social: IconlyUser,
   web: IconlySearch,
