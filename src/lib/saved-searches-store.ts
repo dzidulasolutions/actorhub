@@ -3,6 +3,7 @@ import {
   listSavedSearches,
   loadSavedItems,
   saveSearch,
+  clearSavedSearches,
   type SavedSearchMeta,
 } from "@/lib/saved-searches-db";
 import { getSearchesSnapshot, hydrateSearch } from "@/lib/searches-store";
@@ -80,4 +81,10 @@ export async function openSaved(id: string): Promise<void> {
     total: meta.total,
     error: null,
   });
+}
+
+/** Supprime toutes les sauvegardes de ce navigateur. */
+export async function clearSaved(): Promise<void> {
+  await clearSavedSearches();
+  set({ list: [], error: null });
 }

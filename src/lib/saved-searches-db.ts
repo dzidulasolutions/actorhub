@@ -97,3 +97,12 @@ export async function deleteSavedSearch(id: string): Promise<void> {
   tx.objectStore(ITEMS).delete(id);
   await done(tx);
 }
+
+// Efface toutes les sauvegardes d'un coup (en-têtes et résultats), tout ou rien
+export async function clearSavedSearches(): Promise<void> {
+  const db = await openDb();
+  const tx = db.transaction([META, ITEMS], "readwrite");
+  tx.objectStore(META).clear();
+  tx.objectStore(ITEMS).clear();
+  await done(tx);
+}

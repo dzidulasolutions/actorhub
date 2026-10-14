@@ -38,6 +38,15 @@ export function saveActors(actors: ActorConfig[]): void {
   listeners.forEach((l) => l());
 }
 
+// Oublie l'onboarding : il sera rejoué à la prochaine ouverture de l'app
+export function clearOnboarded(): void {
+  try {
+    window.localStorage.removeItem(KEYS.onboarded);
+  } catch {
+    /* stockage indisponible : rien à effacer */
+  }
+}
+
 // React appelle ceci pour être notifié des changements
 export function subscribeActors(callback: () => void): () => void {
   listeners.add(callback);

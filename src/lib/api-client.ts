@@ -30,3 +30,6 @@ export const getDatasetItems = (datasetId: string, limit = 1000) =>
   request<{ items: unknown[]; total: number; offset: number; limit: number }>(
     `/api/apify/datasets/${datasetId}?limit=${limit}`
   );
+
+// Teste le jeton Apify côté serveur ; ne renvoie que le nom du compte, jamais le jeton
+export const getHealth = () => request<{ ok: true; username: string }>("/api/apify/health");
