@@ -13,14 +13,24 @@ import { useSearch } from "@/hooks/use-searches";
 import { useExplorerState } from "@/hooks/use-explorer-state";
 import { hostOf, normalizeResult } from "@/lib/normalize-results";
 import { cn } from "@/lib/utils";
-import type { SocialNetwork } from "@/types/results";
-import { CopyButton } from "./result-card";
 import { isEmptyValue, JsonValue } from "./json-tree";
 import { ResultDetailSkeleton } from "./result-detail-skeleton";
+import { CopyButton, fmtDay, KIND_LABELS } from "./result-card";
+import { imageBg, imageFit } from "./image-fit";
+import type { ResultKind, SocialNetwork } from "@/types/results";
+
 
 const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   linkedin: "LinkedIn", facebook: "Facebook", instagram: "Instagram",
   twitter: "X", youtube: "YouTube", tiktok: "TikTok",
+};
+
+const TAGLINE_LABEL: Record<ResultKind, string> = {
+  place: "Détail",
+  job: "Entreprise",
+  profile: "Titre",
+  video: "Auteur",
+  other: "Détail",
 };
 
 const isRecord = (v: unknown): v is Record<string, unknown> =>
@@ -216,10 +226,12 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
             </Section>
 
             <Section title="Informations">
-              <dl className="space-y-3 text-sm">
+<dl className="space-y-3 text-sm">
                 {closed && (
                   <div className="border-l-2 border-destructive bg-destructive/10 px-3 py-2 text-destructive">{closed}</div>
                 )}
+                {KIND_LABELS[result.kind] && <Row label="Type">{KIND_LABELS[result.kind]}</Row>}
+                {result.tagline && <Row label={TAGLINE_LABEL[result.kind]}>{result.tagline}</Row>}
                 {result.category && <Row label="Catégorie">{result.category}</Row>}
                 {result.rating !== null && (
                   <Row label="Note">
@@ -229,6 +241,18 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
                       {result.reviewsCount !== null && (
                         <span className="text-muted-foreground">· {result.reviewsCount} avis</span>
                       )}
+                    </span>
+                  </Row>
+                )}
+                {result.facts.map((f) => (
+                  <Row key={f.label} label={f.label}>{f.value}</Row>
+                ))}
+                {result.badges.length > 0 && (
+                  <Row label="Étiquettes">
+                    <span className="flex flex-wrap gap-1.5">
+                      {result.badges.map((b) => (
+                        <span key={b} className="bg-accent px-2 py-0.5 text-xs text-primary">{b}</span>
+                      ))}
                     </span>
                   </Row>
                 )}
@@ -244,8 +268,11 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
                     </span>
                   </Row>
                 )}
-                {result.description && <Row label="Description">{result.description}</Row>}
-                {result.date && <Row label="Date">{result.date}</Row>}
+                {result.description && (
+                  // whitespace-pre-line : conserve les retours à la ligne des longues descriptions (texte brut)
+                  <Row label="Description"><span className="whitespace-pre-line">{result.description}</span></Row>
+                )}
+                {result.date && <Row label="Date">{fmtDay(result.date)}</Row>}
               </dl>
 
               {hours && (
@@ -301,10 +328,10 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
 
           {/* ===== Colonne latérale ===== */}
           <aside className="space-y-4 lg:sticky lg:top-6 lg:h-fit">
-            <div className="relative aspect-4/3 w-full overflow-hidden bg-muted">
+            <div className={cn("relative aspect-4/3 w-full overflow-hidden", imageBg(result.kind))}>
               {result.image && !imageBroken ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={result.image} alt="" referrerPolicy="no-referrer" onError={() => setImageBroken(true)} className="absolute inset-0 size-full object-cover" />
+                <img src={result.image} alt="" referrerPolicy="no-referrer" onError={() => setImageBroken(true)} className={cn("absolute inset-0 size-full", imageFit(result.kind))} />
               ) : (
                 <div className="absolute inset-0 grid place-items-center text-muted-foreground"><ImageOff className="size-8" /></div>
               )}
