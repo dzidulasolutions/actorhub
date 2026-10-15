@@ -109,6 +109,15 @@ export function SettingsPage() {
     }
   }
 
+    async function logout() {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      window.location.assign("/login"); // rechargement complet : vide aussi la mémoire de la session
+    }
+  }
+
+
   return (
     <>
       <PageHeader title="Paramètres" description="Connexion Apify et données de ce navigateur" />
@@ -179,6 +188,12 @@ export function SettingsPage() {
           </Button>
         </Section>
 
+        <Section title="Session" description="Tu restes connecté 7 jours sur cet appareil.">
+          <Button type="button" variant="outline" onClick={logout} className="h-9">
+            Se déconnecter
+          </Button>
+        </Section>
+
         {/* ===== Suppression ===== */}
         <Section title="Suppression" description="Ces actions sont définitives et demandent une confirmation.">
           <div className="flex flex-wrap gap-2">
@@ -193,6 +208,8 @@ export function SettingsPage() {
             </Button>
           </div>
         </Section>
+
+
       </div>
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
