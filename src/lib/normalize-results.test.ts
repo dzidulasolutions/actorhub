@@ -122,5 +122,103 @@ describe("normalizeResult", () => {
     expect(r.socials).toEqual([{ network: "facebook", url: "https://www.facebook.com/ShafRoyalhotel" }]);
     expect(r.emails).toEqual([]);
   });
+
+    it("reconnaît une offre d'emploi LinkedIn", () => {
+    const item = {
+      id: "3692563200",
+      link: "https://www.linkedin.com/jobs/view/english-data-labeling-analyst-at-facebook-3692563200",
+      title: "English Data Labeling Analyst",
+      companyName: "Facebook",
+      companyLinkedinUrl: "https://www.linkedin.com/company/facebook",
+      companyLogo: "https://media.licdn.com/dms/image/x/company-logo_100_100/0/1",
+      location: "Los Angeles Metropolitan Area",
+      salaryInfo: ["$17.00", "$19.00"],
+      postedAt: "2023-08-16",
+      benefits: ["Actively Hiring"],
+      descriptionHtml: "<p>APPROVED REMOTE LOCATIONS:</p>",
+      descriptionText: "APPROVED REMOTE LOCATIONS: Los Angeles",
+      applicantsCount: "200",
+      employmentType: "Contract",
+      seniorityLevel: "Associate",
+      industries: "Retail Office Equipment",
+      companyWebsite: "https://www.meta.com",
+    };
+    const r = normalizeResult(item, 0);
+    expect(r.kind).toBe("job");
+    expect(r.title).toBe("English Data Labeling Analyst");
+    expect(r.tagline).toBe("Facebook");
+    expect(r.subtitle).toBe("Los Angeles Metropolitan Area");
+    expect(r.category).toBe("Retail Office Equipment");
+    expect(r.description).toBe("APPROVED REMOTE LOCATIONS: Los Angeles"); // texte brut, jamais le HTML
+    expect(r.website).toBe("https://www.meta.com/");
+    expect(r.image).toBe("https://media.licdn.com/dms/image/x/company-logo_100_100/0/1");
+    expect(r.date).toBe("2023-08-16");
+    expect(r.badges).toEqual(["Actively Hiring"]);
+    expect(r.facts.find((f) => f.label === "Salaire")?.value).toBe("$17.00 – $19.00");
+    expect(r.facts.find((f) => f.label === "Contrat")?.value).toBe("Contract");
+    expect(r.facts.map((f) => f.label)).toContain("Candidats");
+    expect(r.socials).toEqual([{ network: "linkedin", url: "https://www.linkedin.com/company/facebook" }]);
+    expect(r.emails).toEqual([]);
+  });
+
+  it("reconnaît un profil LinkedIn (nom composé, localisation en objet)", () => {
+    const item = {
+      id: "ACoAACLevxsBfWQoDUYkHyCP2jzl81cDAvckQEI",
+      linkedinUrl: "https://www.linkedin.com/in/towhid-rahman",
+      firstName: "Towhid",
+      lastName: "Rahman, PharmD",
+      headline: "Pharmacology | Medical Science Liasion",
+      about: "I find myself at a unique crossroads where science meets compassion.",
+      photo: "https://media.licdn.com/dms/image/v2/x/profile-displayphoto-shrink_800_800/0/1",
+      verified: true,
+      openToWork: false,
+      location: { linkedinText: "Los Angeles, California, United States", countryCode: "US" },
+      connectionsCount: 261,
+      followerCount: 264,
+      currentPosition: [{ companyName: "CVS Health" }],
+    };
+    const r = normalizeResult(item, 0);
+    expect(r.kind).toBe("profile");
+    expect(r.title).toBe("Towhid Rahman, PharmD");
+    expect(r.tagline).toBe("Pharmacology | Medical Science Liasion");
+    expect(r.subtitle).toBe("Los Angeles, California, United States");
+    expect(r.category).toBe("CVS Health");
+    expect(r.url).toBe("https://www.linkedin.com/in/towhid-rahman");
+    expect(r.image).toContain("profile-displayphoto");
+    expect(r.badges).toEqual(["Vérifié"]);
+    expect(r.facts.map((f) => f.label)).toEqual(["Relations", "Abonnés"]);
+  });
+
+  it("reconnaît une vidéo TikTok sans texte (titre de repli, image imbriquée)", () => {
+    const item = {
+      id: "7533731959172861206",
+      text: "",
+      createTimeISO: "2025-08-01T21:27:45.000Z",
+      authorMeta: {
+        name: "shaiie_foeva",
+        nickName: "Shaiie_Foeva",
+        profileUrl: "https://www.tiktok.com/@shaiie_foeva",
+      },
+      webVideoUrl: "https://www.tiktok.com/@shaiie_foeva/video/7533731959172861206",
+      videoMeta: { coverUrl: "https://p16.tiktokcdn-us.com/cover.image" },
+      diggCount: 25900,
+      shareCount: 352,
+      playCount: 573900,
+      commentCount: 346,
+      isSlideshow: false,
+      isPinned: true,
+    };
+    const r = normalizeResult(item, 0);
+    expect(r.kind).toBe("video");
+    expect(r.title).toBe("Vidéo de Shaiie_Foeva");
+    expect(r.tagline).toBe("@shaiie_foeva");
+    expect(r.url).toBe("https://www.tiktok.com/@shaiie_foeva/video/7533731959172861206");
+    expect(r.image).toBe("https://p16.tiktokcdn-us.com/cover.image");
+    expect(r.date).toBe("2025-08-01T21:27:45.000Z");
+    expect(r.facts.map((f) => f.label)).toEqual(["Vues", "J'aime", "Commentaires", "Partages"]);
+    expect(r.badges).toEqual(["Épinglée"]);
+    expect(r.socials).toEqual([{ network: "tiktok", url: "https://www.tiktok.com/@shaiie_foeva" }]);
+    expect(r.emails).toEqual([]);
+  });
   
 });

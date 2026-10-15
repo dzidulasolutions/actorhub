@@ -32,6 +32,18 @@ describe("exploreResults", () => {
     exploreResults(data, "", NO_FILTERS, "name");
     expect(data.map((r) => r.index)).toEqual([0, 1, 2]);
   });
+
+    it("trie par date, les plus récents d'abord, dates absentes en dernier", () => {
+    const withDates = [
+      normalizeResult({ title: "Ancien", postedAt: "2023-01-01" }, 0),
+      normalizeResult({ title: "Sans date" }, 1),
+      normalizeResult({ title: "Récent", postedAt: "2025-06-01" }, 2),
+    ];
+    expect(exploreResults(withDates, "", NO_FILTERS, "date").map((r) => r.title)).toEqual([
+      "Récent", "Ancien", "Sans date",
+    ]);
+  });
+  
 });
 
 describe("paginate", () => {

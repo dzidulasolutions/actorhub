@@ -1,12 +1,13 @@
 import type { NormalizedResult } from "@/types/results";
 
-export type SortKey = "default" | "name" | "rating" | "reviews";
+export type SortKey = "default" | "name" | "rating" | "reviews" | "date";
 
 export const SORT_LABELS: Record<SortKey, string> = {
   default: "Ordre de collecte",
   name: "Nom (A → Z)",
   rating: "Meilleure note",
   reviews: "Plus d'avis",
+  date: "Plus récents",
 };
 
 export interface Filters {
@@ -34,12 +35,17 @@ function searchText(r: NormalizedResult): string {
   let text = cache.get(r);
   if (text === undefined) {
     const parts: (string | null)[] = [
-      r.title, r.subtitle, r.category, r.description, r.website,
+      r.title, r.tagline, r.subtitle, r.category, r.description, r.website,
       ...r.emails, ...r.phones, ...r.socials.map((s) => s.url),
+      ...r.badges, ...r.facts.map((f) => f.value),
     ];
-    for (const v of Object.values(r.raw)) if (typeof v === "string") parts.push(v);
-    text = fold(parts.filter(Boolean).join("\n"));
-    cache.set(r, text);
+    // Valeurs texte du premier niveau de l'objet original, sans les champs HTML
+    // (sinon une recherche « p » ou « ul » trouverait des balises)
+    for (const [key, v] of Object.entries(r.raw)) {
+      if (typeof v === "string" && !/html$/i.test(key)) parts.push(v);
+    }
+    text = fold(parts.filter(Boolean).join("\n")); // minuscules et sans accents
+    cache.set(r, text); // calculé une seule fois par résultat
   }
   return text;
 }
@@ -63,6 +69,12 @@ const byName = (a: NormalizedResult, b: NormalizedResult) => {
   return a.title.localeCompare(b.title, "fr", { sensitivity: "base" });
 };
 
+const timeOf = (r: NormalizedResult): number | null => {
+  if (!r.date) return null;
+  const t = Date.parse(r.date);
+  return Number.isNaN(t) ? null : t;
+};
+
 export function exploreResults(
   results: NormalizedResult[],
   query: string,
@@ -83,6 +95,7 @@ export function exploreResults(
   if (sort === "name") sorted.sort(byName);
   if (sort === "rating") sorted.sort(byNumberDesc((r) => r.rating));
   if (sort === "reviews") sorted.sort(byNumberDesc((r) => r.reviewsCount));
+  if (sort === "date") sorted.sort(byNumberDesc(timeOf));
   return sorted;
 }
 
