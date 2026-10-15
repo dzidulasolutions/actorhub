@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { apifyFetch, toRunInfo, errorResponse, type ApifyRun } from "@/lib/apify";
 import { startRunSchema } from "@/lib/validations";
+import { guard } from "@/lib/api-guard";
+
 
 const MAX_BODY_CHARS = 100_000; // entrée d'Actor limitée à ~100 Ko
 
 // POST /api/apify/runs   corps : { actorId, input, maxItems? }
 export async function POST(req: Request) {
   try {
+    const denied = await guard(req, "start");
+        if (denied) return denied;
     const text = await req.text();
     if (text.length > MAX_BODY_CHARS) {
       return NextResponse.json({ ok: false, error: "Entrée trop volumineuse" }, { status: 413 });

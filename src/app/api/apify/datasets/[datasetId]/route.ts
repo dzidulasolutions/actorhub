@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { apifyFetchRaw, errorResponse } from "@/lib/apify";
 import { APIFY_RESOURCE_ID } from "@/lib/validations";
+import { guard } from "@/lib/api-guard";
 
 // Lit un entier dans l'URL avec valeur par défaut et bornes
 function intParam(value: string | null, fallback: number, min: number, max: number) {
@@ -14,6 +15,8 @@ export async function GET(
   { params }: { params: Promise<{ datasetId: string }> }
 ) {
   try {
+    const denied = await guard(req, "read");
+    if (denied) return denied;
     const { datasetId } = await params;
     if (!APIFY_RESOURCE_ID.test(datasetId)) {
       return NextResponse.json({ ok: false, error: "Identifiant de dataset invalide" }, { status: 400 });
