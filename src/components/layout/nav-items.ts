@@ -5,6 +5,7 @@ import {
   IconlyActivity,
   IconlyDocument,
   IconlyPaper,
+  IconlyUser
 } from "@/components/icons/iconly";
 
 export const NAV_MAIN = [
@@ -16,5 +17,6 @@ export const NAV_MAIN = [
 ] as const;
 
 export const NAV_PREFS = [
+  { href: "/profile", label: "Mon profil", icon: IconlyUser },
   { href: "/settings", label: "Paramètres", icon: Settings },
 ] as const;

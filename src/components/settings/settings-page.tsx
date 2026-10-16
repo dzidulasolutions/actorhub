@@ -16,8 +16,11 @@ import { downloadJson } from "@/lib/export-json";
 import { clearOnboarded, saveActors } from "@/lib/local-storage";
 import { clearSaved } from "@/lib/saved-searches-store";
 import { SettingsSkeleton } from "./settings-skeleton";
+import { useProfile } from "@/hooks/use-profile";
+import { clearProfile } from "@/lib/profile-store";
 
-type Confirm = "actors" | "saved" | "all";
+
+type Confirm = "actors" | "saved" | "profile" | "all";
 
 const CONFIRM_TEXT: Record<Confirm, { title: string; text: string; action: string }> = {
   actors: {
@@ -34,6 +37,11 @@ const CONFIRM_TEXT: Record<Confirm, { title: string; text: string; action: strin
     title: "Tout réinitialiser ?",
     text: "Tes Actors, tes sauvegardes et l'état de l'introduction seront effacés de ce navigateur. L'application repartira de zéro.",
     action: "Tout réinitialiser",
+  },
+  profile: {
+    title: "Supprimer ton profil ?",
+    text: "Tes informations et le texte de ton CV seront effacés de ce navigateur. Les fichiers déjà téléchargés ne sont pas touchés.",
+    action: "Supprimer mon profil",
   },
 };
 
@@ -59,6 +67,8 @@ export function SettingsPage() {
   const router = useRouter();
   const { actors, ready: actorsReady } = useActors();
   const { saved, ready: savedReady } = useSavedSearches();
+  const { profile, ready: profileReady } = useProfile();
+
 
   const [conn, setConn] = useState<Connection>({ state: "idle" });
   // `confirm` garde le type de suppression ; `confirmOpen` pilote l'affichage (la modale se ferme toujours elle-même)
@@ -66,7 +76,7 @@ export function SettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
-  if (!actorsReady || !savedReady) return <SettingsSkeleton />;
+  if (!actorsReady || !savedReady || !profileReady) return <SettingsSkeleton />;
 
   const savedCount = saved?.length ?? 0;
   const savedResults = (saved ?? []).reduce((sum, m) => sum + m.count, 0);
@@ -109,7 +119,7 @@ export function SettingsPage() {
     }
   }
 
-    async function logout() {
+  async function logout() {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
@@ -181,6 +191,10 @@ export function SettingsPage() {
                 {savedCount > 0 && <span className="font-normal text-muted-foreground"> · {savedResults} résultat{savedResults > 1 ? "s" : ""}</span>}
               </dd>
             </div>
+            <div className="flex justify-between gap-4 py-2.5">
+              <dt className="text-muted-foreground">Profil et CV</dt>
+              <dd className="font-medium">{profile.updatedAt ? "Renseigné" : "Vide"}</dd>
+            </div>
           </dl>
 
           <Button type="button" variant="outline" onClick={downloadActors} disabled={actors.length === 0} className="h-9 gap-2">
@@ -202,6 +216,9 @@ export function SettingsPage() {
             </Button>
             <Button type="button" variant="outline" onClick={() => ask("saved")} disabled={savedCount === 0} className="h-9">
               Supprimer les sauvegardes
+            </Button>
+            <Button type="button" variant="outline" onClick={() => ask("profile")} disabled={!profile.updatedAt} className="h-9">
+              Supprimer mon profil
             </Button>
             <Button type="button" onClick={() => ask("all")} className="h-9 bg-destructive text-white hover:bg-destructive/90">
               Tout réinitialiser
