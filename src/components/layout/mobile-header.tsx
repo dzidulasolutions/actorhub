@@ -19,7 +19,7 @@ export function MobileHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="flex items-center justify-between border-b border-border px-4 py-3 lg:hidden">
+    <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-card px-4 py-3 lg:hidden">
       <Logo />
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger

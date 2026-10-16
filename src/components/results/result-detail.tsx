@@ -327,7 +327,7 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
           </div>
 
           {/* ===== Colonne latérale ===== */}
-          <aside className="space-y-4 lg:sticky lg:top-6 lg:h-fit">
+                      <aside className="order-first space-y-4 lg:sticky lg:top-6 lg:order-0 lg:h-fit">
             <div className={cn("relative aspect-4/3 w-full overflow-hidden", imageBg(result.kind))}>
               {result.image && !imageBroken ? (
                 // eslint-disable-next-line @next/next/no-img-element

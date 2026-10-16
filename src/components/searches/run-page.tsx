@@ -72,7 +72,7 @@ export function RunPage({ runId }: { runId: string }) {
       <PageHeader
         title={search.actorName}
         description={`Run ${search.id}`}
-                actions={
+        actions={
           active ? (
             <Button variant="outline" onClick={handleAbort} disabled={aborting} className="h-9">
               {aborting ? "Interruption…" : "Interrompre"}
@@ -177,7 +177,7 @@ function Steps({ status }: { status: RunStatus }) {
                 : "border-primary bg-primary text-white"),
             i > current && "border-border text-muted-foreground"
           )}>{i + 1}</span>
-          <span className={cn("text-sm", i > current && "text-muted-foreground")}>{label}</span>
+          <span className={cn("text-sm", i > current && "text-muted-foreground", i !== current && "hidden sm:inline")}>{label}</span>
           {i < labels.length - 1 && <span className="h-px flex-1 bg-border" aria-hidden="true" />}
         </li>
       ))}

@@ -16,9 +16,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarNav />
         </Suspense>
       </aside>
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-card lg:border lg:border-border">
+      <div className="flex min-w-0 flex-1 flex-col bg-card lg:overflow-hidden lg:rounded-2xl lg:border lg:border-border lg:shadow-card">
         <MobileHeader />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 lg:overflow-y-auto">
           <OnboardingGuard>{children}</OnboardingGuard>
         </main>
       </div>
