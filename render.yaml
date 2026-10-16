@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: actorhub
+    runtime: node
+    plan: free # IMPORTANT : sans cette ligne, Render prend « starter » (payant)
+    region: frankfurt # région européenne la plus proche de Lomé
+    buildCommand: npm ci --include=dev && npm run build # --include=dev : Next a besoin de TypeScript et Tailwind pour construire
+    startCommand: npm run start # Next lit le port fourni par Render
+    healthCheckPath: /login # seule page publique : répond sans connexion
+    autoDeploy: true # redéploie à chaque push ; mets false pour déployer à la main
+    envVars:
+      - key: NODE_VERSION
+        value: "22" # Next 16 demande Node 20.9 ou plus
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: APIFY_MAX_CHARGE_USD
+        value: "1" # plafond de budget par collecte, en dollars
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=460 # l'offre gratuite n'a que 512 Mo de mémoire
+      - key: SESSION_SECRET
+        generateValue: true # Render génère un secret aléatoire, jamais écrit dans Git
+      - key: ACCESS_CODE
+        sync: false # Render te demande la valeur au déploiement (ton code d'accès)
+      - key: APIFY_API_TOKEN
+        sync: false # idem : ton jeton Apify, jamais dans le dépôt
