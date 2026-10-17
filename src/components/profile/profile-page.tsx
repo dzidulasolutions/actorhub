@@ -108,6 +108,26 @@ function ProfileEditor({ initial }: { initial: Profile }) {
     downloadJson(draft, `actorhub-profil-${date}.json`);
   }
 
+  async function handleImport(file: File) {
+    setImporting(true);
+    setImportError(null);
+    setImportNote(null);
+    try {
+      const { text, truncated } = await extractCvText(file);
+      // Le brouillon est remplacé ; le profil enregistré ne change qu'au clic sur « Enregistrer »
+      setDraft((d) => ({ ...d, cvText: text, cvFileName: file.name }));
+      setImportNote(
+        truncated
+          ? "Le CV dépasse 50 000 caractères : le texte a été coupé."
+          : "Texte extrait. Relis-le : une mise en page sur deux colonnes peut en mélanger l'ordre."
+      );
+    } catch (e) {
+      setImportError(e instanceof CvImportError ? e.message : "Import impossible");
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -167,23 +187,52 @@ function ProfileEditor({ initial }: { initial: Profile }) {
             <TagInput id="p-places" label="Lieux recherchés" value={draft.targetLocations} onChange={(v) => set("targetLocations", v)} placeholder="Ex. Lomé, Remote, Paris" max={20} />
           </Section>
 
-          <Section title="Texte du CV" description="Colle ici le contenu de ton CV. L'import d'un fichier PDF ou Word arrive à l'étape suivante.">
+<Section
+            title="Mon CV"
+            description="Importe ton CV (PDF, Word .docx ou texte) ou colle son contenu. Le fichier est lu dans ton navigateur : il n'est ni envoyé ni conservé, seul le texte l'est."
+          >
+            <CvImport busy={importing} onFile={handleImport} />
+
+            {importError && (
+              <p role="alert" className="border-l-2 border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {importError}
+              </p>
+            )}
+            {importNote && !importError && (
+              <p role="status" className="border-l-2 border-primary bg-accent px-4 py-3 text-sm">{importNote}</p>
+            )}
+            {draft.cvFileName && (
+              <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="size-4 shrink-0" />
+                <span className="min-w-0 truncate">Importé depuis {draft.cvFileName}</span>
+              </p>
+            )}
+
             <div className="space-y-2">
-              <Textarea
-                id="p-cv"
-                aria-label="Texte du CV"
-                value={draft.cvText}
-                onChange={(e) => set("cvText", e.target.value)}
-                rows={14}
-                maxLength={MAX_CV_CHARS}
-                className="font-mono text-sm"
-              />
+              {importing ? (
+                <Skeleton className="h-72 w-full" aria-hidden="true" />
+              ) : (
+                <Textarea
+                  id="p-cv"
+                  aria-label="Texte du CV"
+                  value={draft.cvText}
+                  onChange={(e) => set("cvText", e.target.value)}
+                  rows={14}
+                  maxLength={MAX_CV_CHARS}
+                  placeholder="Ou colle ici le texte de ton CV…"
+                  className="font-mono text-sm"
+                />
+              )}
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>
                   {draft.cvText.length.toLocaleString("fr-FR")} / {MAX_CV_CHARS.toLocaleString("fr-FR")} caractères
                 </span>
                 {draft.cvText && (
-                  <button type="button" onClick={() => set("cvText", "")} className="hover:text-destructive">
+                  <button
+                    type="button"
+                    onClick={() => setDraft((d) => ({ ...d, cvText: "", cvFileName: null }))}
+                    className="hover:text-destructive"
+                  >
                     Effacer le texte du CV
                   </button>
                 )}

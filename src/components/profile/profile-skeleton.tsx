@@ -41,6 +41,7 @@ export function ProfileSkeleton() {
             <FieldSkeleton />
           </SectionSkeleton>
           <SectionSkeleton>
+            <Skeleton className="h-36 w-full" /> {/* zone d'import */}
             <FieldSkeleton height="h-64" />
           </SectionSkeleton>
         </div>
