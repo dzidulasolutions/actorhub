@@ -1,7 +1,5 @@
-// src/components/results/results-explorer.tsx
 "use client";
 
-import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { IconlySearch, IconlyDownload } from "@/components/icons/iconly";
 import { Button } from "@/components/ui/button";
@@ -21,7 +19,10 @@ import { useExplorerState } from "@/hooks/use-explorer-state";
 import { ResultCard } from "./result-card";
 import { ExportPanel } from "./export-panel";
 import type { ExportMeta } from "@/lib/export-json";
-
+import { useCallback, useMemo, useState } from "react";
+import { useProfile } from "@/hooks/use-profile";
+import { createJobScorer } from "@/lib/job-match";
+import { NormalizedResult } from "@/types/results";
 
 
 const PAGE_SIZE = 12;
@@ -31,6 +32,7 @@ const FILTER_LABELS: Record<keyof Filters, string> = {
   withPhone: "Avec téléphone",
   withWebsite: "Avec site web",
   withSocial: "Avec réseau social",
+  goodMatch: "Bon score (60+)",
 };
 
 export function ResultsExplorer({
@@ -43,15 +45,23 @@ export function ResultsExplorer({
 }) {
   // Normalisation calculée une seule fois par jeu de résultats
   const results = useMemo(() => normalizeResults(items), [items]);
-  const counts = useMemo(() => countFilters(results), [results]);
+  const { profile } = useProfile();
+  const scorer = useMemo(() => createJobScorer(profile), [profile]);
+  // Score de chaque offre, recalculé seulement si le profil ou les résultats changent
+  const matches = useMemo(() => new Map(results.map((r) => [r.index, scorer(r)] as const)), [results, scorer]);
+  const scoreOf = useCallback((r: NormalizedResult) => matches.get(r.index)?.score ?? null, [matches]);
+  const hasScores = useMemo(() => [...matches.values()].some((m) => m !== null), [matches]);
+  const counts = useMemo(() => countFilters(results, scoreOf), [results, scoreOf]);
+
+
 
   // Recherche, filtres, tri, page et sélection : dans le store (survivent à la navigation)
   const [ui, setUi] = useExplorerState(runId);
   const { query, filters, sort, page, selected } = ui;
   const [exportOpen, setExportOpen] = useState(false);
-  const filtered = useMemo(
-    () => exploreResults(results, query, filters, sort),
-    [results, query, filters, sort]
+     const filtered = useMemo(
+    () => exploreResults(results, query, filters, sort, scoreOf),
+    [results, query, filters, sort, scoreOf]
   );
   const view = paginate(filtered, page, PAGE_SIZE);
 
@@ -99,15 +109,19 @@ export function ResultsExplorer({
           aria-label="Trier les résultats"
           className="h-10 border border-input bg-card px-3 text-sm outline-none focus-visible:border-ring"
         >
-          {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
-            <option key={k} value={k}>{SORT_LABELS[k]}</option>
-          ))}
+          {(Object.keys(SORT_LABELS) as SortKey[])
+            .filter((k) => k !== "match" || hasScores)
+            .map((k) => (
+              <option key={k} value={k}>{SORT_LABELS[k]}</option>
+            ))}
         </select>
       </div>
 
       {/* Filtres avec compteurs */}
       <div className="flex flex-wrap gap-2">
-        {(Object.keys(FILTER_LABELS) as (keyof Filters)[]).map((key) => (
+                {(Object.keys(FILTER_LABELS) as (keyof Filters)[])
+          .filter((key) => key !== "goodMatch" || hasScores)
+          .map((key) => (
           <button
             key={key}
             type="button"
@@ -197,12 +211,13 @@ export function ResultsExplorer({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {view.items.map((r) => (
-            <ResultCard
+          <ResultCard
               key={r.index}
               result={r}
               href={`/searches/${runId}/results/${r.index}`}
               selected={selected.has(r.index)}
               onToggle={() => toggleOne(r.index)}
+              match={matches.get(r.index) ?? null}
             />
           ))}
         </div>

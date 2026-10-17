@@ -18,7 +18,9 @@ import { ResultDetailSkeleton } from "./result-detail-skeleton";
 import { CopyButton, fmtDay, KIND_LABELS } from "./result-card";
 import { imageBg, imageFit } from "./image-fit";
 import type { ResultKind, SocialNetwork } from "@/types/results";
-
+import { useProfile } from "@/hooks/use-profile";
+import { createJobScorer } from "@/lib/job-match";
+import { MatchBar } from "./match-bar";
 
 const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   linkedin: "LinkedIn", facebook: "Facebook", instagram: "Instagram",
@@ -88,6 +90,12 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
   const result = useMemo(
     () => (item === undefined ? null : normalizeResult(item, index)),
     [item, index]
+  );
+
+  const { profile } = useProfile();
+  const match = useMemo(
+    () => (result ? createJobScorer(profile)(result) : null),
+    [profile, result]
   );
 
   if (!ready) return <ResultDetailSkeleton />;
@@ -226,7 +234,7 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
             </Section>
 
             <Section title="Informations">
-<dl className="space-y-3 text-sm">
+              <dl className="space-y-3 text-sm">
                 {closed && (
                   <div className="border-l-2 border-destructive bg-destructive/10 px-3 py-2 text-destructive">{closed}</div>
                 )}
@@ -278,7 +286,7 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
               {hours && (
                 <div className="space-y-2 border-t border-border pt-4">
                   <p className="flex items-center gap-2 text-sm font-medium"><Clock className="size-4" /> Horaires</p>
-                    <div className="grid gap-1 sm:grid-cols-[120px_minmax(0,1fr)] sm:gap-4">
+                  <div className="grid gap-1 sm:grid-cols-[120px_minmax(0,1fr)] sm:gap-4">
                     {hours.map((h) => (
                       <div key={h.day} className="contents">
                         <dt className="capitalize text-muted-foreground">{h.day}</dt>
@@ -326,8 +334,60 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
             </Section>
           </div>
 
+          {result.kind === "job" && (
+            <Section title="Correspondance avec ton profil">
+              {match ? (
+                <>
+                  <MatchBar match={match} />
+                  <dl className="space-y-3 text-sm">
+                    {match.skillsTotal > 0 && (
+                      <Row label="Compétences">
+                        <span className="block space-y-2">
+                          <span className="block text-muted-foreground">
+                            {match.matchedSkills.length} sur {match.skillsTotal} de tes compétences apparaissent dans l&apos;offre
+                          </span>
+                          {match.matchedSkills.length > 0 && (
+                            <span className="flex flex-wrap gap-1.5">
+                              {match.matchedSkills.map((s) => (
+                                <span key={s} className="bg-accent px-2 py-0.5 text-xs text-primary">{s}</span>
+                              ))}
+                            </span>
+                          )}
+                        </span>
+                      </Row>
+                    )}
+                    {match.roleRatio !== null && (
+                      <Row label="Poste">
+                        {match.roleRatio >= 0.99
+                          ? "Correspond à un de tes postes recherchés"
+                          : match.roleRatio >= 0.5
+                            ? "Proche d'un de tes postes recherchés"
+                            : "Différent de tes postes recherchés"}
+                      </Row>
+                    )}
+                    {match.locationMatch !== null && (
+                      <Row label="Lieu">
+                        {match.locationMatch ? "Correspond à tes lieux recherchés" : "Hors de tes lieux recherchés"}
+                      </Row>
+                    )}
+                  </dl>
+                  <p className="border-l-2 border-primary bg-accent px-4 py-3 text-xs">
+                    Score calculé en local par mots-clés, sans IA et sans coût. Il sert à trier les offres ;
+                    il ne remplace pas ta lecture de l&apos;offre.
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Renseigne tes compétences, tes postes ou tes lieux recherchés dans{" "}
+                  <Link href="/profile" className="text-primary hover:underline">Mon profil</Link>{" "}
+                  pour voir ton score.
+                </p>
+              )}
+            </Section>
+          )}
+
           {/* ===== Colonne latérale ===== */}
-                      <aside className="order-first space-y-4 lg:sticky lg:top-6 lg:order-0 lg:h-fit">
+          <aside className="order-first space-y-4 lg:sticky lg:top-6 lg:order-0 lg:h-fit">
             <div className={cn("relative aspect-4/3 w-full overflow-hidden", imageBg(result.kind))}>
               {result.image && !imageBroken ? (
                 // eslint-disable-next-line @next/next/no-img-element
