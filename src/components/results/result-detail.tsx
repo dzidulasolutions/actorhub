@@ -397,6 +397,16 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
               )}
             </div>
 
+                        {result.kind === "job" && (
+              <Button
+                render={<Link href={`${base}/results/${index}/letter`} />}
+                nativeButton={false}
+                className="h-10 w-full"
+              >
+                Préparer ma candidature
+              </Button>
+            )}
+
             <Button
               type="button"
               onClick={toggleSelected}
