@@ -70,9 +70,9 @@ export function exportFilename(
   return `actorhub-${slugify(actorName)}-${date}-${SCOPE_LABEL[scope]}-${count}${suffix}.json`;
 }
 
-/** Télécharge un JSON lisible (indenté) via un Blob et une URL temporaire, libérée ensuite. */
-export function downloadJson(data: unknown, filename: string): void {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+/** Télécharge un contenu quelconque via un Blob et une URL temporaire, libérée ensuite. */
+export function downloadFile(content: BlobPart, filename: string, mime: string): void {
+  const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -81,6 +81,11 @@ export function downloadJson(data: unknown, filename: string): void {
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000); // libère la mémoire
+}
+
+/** Télécharge un JSON lisible (indenté). */
+export function downloadJson(data: unknown, filename: string): void {
+  downloadFile(JSON.stringify(data, null, 2), filename, "application/json");
 }
 
 /** Métadonnées d'export d'une recherche (utilisé par la page de suivi et la page Résultats). */
