@@ -33,3 +33,25 @@ export const getDatasetItems = (datasetId: string, limit = 1000) =>
 
 // Teste le jeton Apify côté serveur ; ne renvoie que le nom du compte, jamais le jeton
 export const getHealth = () => request<{ ok: true; username: string }>("/api/apify/health");
+
+// ---------- Envoi d'emails ----------
+export interface MailAttachmentInput {
+  filename: string;
+  mime: string;
+  contentBase64: string;
+}
+
+export const getMailStatus = () =>
+  request<{ ok: true; configured: boolean; from: string | null }>("/api/mail/status");
+
+export const sendMail = (payload: {
+  to: string;
+  subject: string;
+  text: string;
+  attachments?: MailAttachmentInput[];
+}) =>
+  request<{ ok: true }>("/api/mail/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });

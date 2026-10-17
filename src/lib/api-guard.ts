@@ -9,6 +9,7 @@ import { clientIp, rateLimit, tooMany } from "@/lib/rate-limit";
 const LIMITS = {
   start: { limit: 20, windowMs: 60 * 60_000 }, // 20 lancements par heure
   read: { limit: 600, windowMs: 10 * 60_000 }, // 600 appels par 10 minutes
+  mail: { limit: 10, windowMs: 10 * 60_000 }, // 10 envois d'email par 10 minutes
 } as const;
 
 /** Renvoie une réponse d'erreur si l'appel est refusé, sinon null. */
