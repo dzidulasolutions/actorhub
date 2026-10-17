@@ -14,6 +14,11 @@ import { saveProfile } from "@/lib/profile-store";
 import type { Profile } from "@/types/profile";
 import { ProfileSkeleton } from "./profile-skeleton";
 import { TagInput } from "./tag-input";
+import { FileText } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CvImportError, extractCvText } from "@/lib/cv-text";
+import { CvImport } from "./cv-import";
+
 
 export function ProfilePage() {
   const { profile, ready } = useProfile();
@@ -50,6 +55,9 @@ function ProfileEditor({ initial }: { initial: Profile }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
+    const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importNote, setImportNote] = useState<string | null>(null);
 
   const dirty = JSON.stringify(draft) !== baseline;
   const { checks, ready: profileReady } = profileReadiness(draft);
