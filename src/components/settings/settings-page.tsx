@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Download, Loader2, Plug, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, Loader2, Plug, XCircle, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -11,13 +11,12 @@ import {
 import { PageHeader } from "@/components/layout/page-header";
 import { useActors } from "@/hooks/use-actors";
 import { useSavedSearches } from "@/hooks/use-saved-searches";
-import { getHealth } from "@/lib/api-client";
 import { downloadJson } from "@/lib/export-json";
 import { clearOnboarded, saveActors } from "@/lib/local-storage";
 import { clearSaved } from "@/lib/saved-searches-store";
 import { SettingsSkeleton } from "./settings-skeleton";
 import { useProfile } from "@/hooks/use-profile";
-import { clearProfile } from "@/lib/profile-store";
+import { getHealth, getMailStatus, sendMail } from "@/lib/api-client"; 
 
 
 type Confirm = "actors" | "saved" | "profile" | "all";
@@ -76,6 +75,10 @@ export function SettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
+   const [mailInfo, setMailInfo] = useState<{ configured: boolean; from: string | null } | null>(null);
+  const [mailBusy, setMailBusy] = useState<"check" | "test" | null>(null);
+  const [mailMsg, setMailMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
+
   if (!actorsReady || !savedReady || !profileReady) return <SettingsSkeleton />;
 
   const savedCount = saved?.length ?? 0;
@@ -127,6 +130,36 @@ export function SettingsPage() {
     }
   }
 
+  async function checkMail() {
+    setMailBusy("check");
+    setMailMsg(null);
+    try {
+      setMailInfo(await getMailStatus());
+    } catch (e) {
+      setMailMsg({ kind: "error", text: e instanceof Error ? e.message : "Vérification impossible" });
+    } finally {
+      setMailBusy(null);
+    }
+  }
+
+  async function sendTestMail() {
+    if (!mailInfo?.from) return;
+    setMailBusy("test");
+    setMailMsg(null);
+    try {
+      await sendMail({
+        to: mailInfo.from, // toujours à toi-même
+        subject: "ActorHub : email de test",
+        text: "Si tu lis ce message, l'envoi d'emails depuis ActorHub fonctionne.",
+      });
+      setMailMsg({ kind: "ok", text: `Email de test envoyé à ${mailInfo.from}. Regarde ta boîte de réception (et les spams).` });
+    } catch (e) {
+      setMailMsg({ kind: "error", text: e instanceof Error ? e.message : "Envoi impossible" });
+    } finally {
+      setMailBusy(null);
+    }
+  }
+
 
   return (
     <>
@@ -167,6 +200,49 @@ export function SettingsPage() {
               </span>
             )}
           </div>
+        </Section>
+
+        <Section
+          title="Envoi d'emails"
+          description="Permet d'envoyer tes candidatures depuis l'app avec ton propre Gmail. Les identifiants restent sur le serveur et ne sont jamais affichés."
+        >
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="button" variant="outline" onClick={checkMail} disabled={mailBusy !== null} className="h-9 gap-2">
+              {mailBusy === "check" ? <Loader2 className="size-4 animate-spin" /> : <Mail className="size-4" />}
+              {mailBusy === "check" ? "Vérification…" : "Vérifier la configuration"}
+            </Button>
+            {mailInfo?.configured && (
+              <Button type="button" onClick={sendTestMail} disabled={mailBusy !== null} className="h-9 gap-2">
+                {mailBusy === "test" ? <Loader2 className="size-4 animate-spin" /> : null}
+                {mailBusy === "test" ? "Envoi…" : "Envoyer un email de test à moi-même"}
+              </Button>
+            )}
+          </div>
+
+          {mailInfo?.configured && (
+            <p role="status" className="inline-flex items-center gap-2 text-sm text-success">
+              <CheckCircle2 className="size-4" /> Configuré : envois depuis {mailInfo.from}
+            </p>
+          )}
+          {mailInfo && !mailInfo.configured && (
+            <p className="border-l-2 border-highlight bg-highlight/10 px-4 py-3 text-sm">
+              Non configuré sur ce serveur. Ajoute <code className="font-mono">GMAIL_USER</code> et{" "}
+              <code className="font-mono">GMAIL_APP_PASSWORD</code> dans <code className="font-mono">.env.local</code>, puis
+              redémarre. Sur l&apos;hébergement gratuit de Render, l&apos;envoi est impossible (ports d&apos;envoi bloqués).
+            </p>
+          )}
+          {mailMsg && (
+            <p
+              role={mailMsg.kind === "error" ? "alert" : "status"}
+              className={
+                mailMsg.kind === "error"
+                  ? "border-l-2 border-destructive bg-destructive/10 px-4 py-3 text-sm text-destructive"
+                  : "border-l-2 border-success bg-success/10 px-4 py-3 text-sm text-success"
+              }
+            >
+              {mailMsg.text}
+            </p>
+          )}
         </Section>
 
         {/* ===== Données locales ===== */}
