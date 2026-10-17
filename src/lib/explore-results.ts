@@ -1,6 +1,7 @@
 import type { NormalizedResult } from "@/types/results";
 
-export type SortKey = "default" | "name" | "rating" | "reviews" | "date";
+export type SortKey = "default" | "name" | "rating" | "reviews" | "date" | "match";
+
 
 export const SORT_LABELS: Record<SortKey, string> = {
   default: "Ordre de collecte",
@@ -8,6 +9,7 @@ export const SORT_LABELS: Record<SortKey, string> = {
   rating: "Meilleure note",
   reviews: "Plus d'avis",
   date: "Plus récents",
+  match: "Meilleur score",
 };
 
 export interface Filters {
@@ -15,6 +17,7 @@ export interface Filters {
   withPhone: boolean;
   withWebsite: boolean;
   withSocial: boolean;
+  goodMatch: boolean; // score de correspondance d'au moins GOOD_MATCH
 }
 
 export const NO_FILTERS: Filters = {
@@ -22,7 +25,11 @@ export const NO_FILTERS: Filters = {
   withPhone: false,
   withWebsite: false,
   withSocial: false,
+  goodMatch: false,
 };
+
+export type ScoreOf = (r: NormalizedResult) => number | null;
+export const GOOD_MATCH = 60;
 
 // Minuscules et sans accents : "hotel" trouve "Hôtel"
 export const fold = (s: string) =>
@@ -79,7 +86,8 @@ export function exploreResults(
   results: NormalizedResult[],
   query: string,
   filters: Filters,
-  sort: SortKey
+  sort: SortKey,
+  scoreOf?: ScoreOf
 ): NormalizedResult[] {
   const q = fold(query.trim());
   const out = results.filter(
@@ -88,7 +96,8 @@ export function exploreResults(
       (!filters.withEmail || r.emails.length > 0) &&
       (!filters.withPhone || r.phones.length > 0) &&
       (!filters.withWebsite || r.website !== null) &&
-      (!filters.withSocial || r.socials.length > 0)
+      (!filters.withSocial || r.socials.length > 0) &&
+      (!filters.goodMatch || (scoreOf?.(r) ?? -1) >= GOOD_MATCH)
   );
   if (sort === "default") return out;
   const sorted = [...out]; // on ne modifie jamais le tableau d'origine
@@ -96,16 +105,19 @@ export function exploreResults(
   if (sort === "rating") sorted.sort(byNumberDesc((r) => r.rating));
   if (sort === "reviews") sorted.sort(byNumberDesc((r) => r.reviewsCount));
   if (sort === "date") sorted.sort(byNumberDesc(timeOf));
+  if (sort === "match" && scoreOf) sorted.sort(byNumberDesc(scoreOf));
   return sorted;
 }
 
+
 // Compteurs affichés sur les filtres
-export function countFilters(results: NormalizedResult[]): Record<keyof Filters, number> {
+export function countFilters(results: NormalizedResult[], scoreOf?: ScoreOf): Record<keyof Filters, number> {
   return {
     withEmail: results.filter((r) => r.emails.length > 0).length,
     withPhone: results.filter((r) => r.phones.length > 0).length,
     withWebsite: results.filter((r) => r.website !== null).length,
     withSocial: results.filter((r) => r.socials.length > 0).length,
+    goodMatch: scoreOf ? results.filter((r) => (scoreOf(r) ?? -1) >= GOOD_MATCH).length : 0,
   };
 }
 

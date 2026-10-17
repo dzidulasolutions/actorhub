@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { hostOf } from "@/lib/normalize-results";
 import type { NormalizedResult, ResultKind, SocialNetwork } from "@/types/results";
 import { imageBg, imageFit } from "./image-fit";
+import type { MatchResult } from "@/lib/job-match";
+import { MatchBar } from "./match-bar";
+
 
 const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   linkedin: "LinkedIn",
@@ -39,11 +42,13 @@ export function ResultCard({
   href,
   selected,
   onToggle,
+  match = null,
 }: {
   result: NormalizedResult;
-  href: string; // page de détail
+  href: string;
   selected: boolean;
   onToggle: () => void;
+  match?: MatchResult | null;
 }) {
   const { kind, emails, phones, website, socials, facts, badges } = result;
   const [imageBroken, setImageBroken] = useState(false);
@@ -70,7 +75,7 @@ export function ResultCard({
     >
       {/* Image : boîte au ratio fixe 4:3 ; l'image est en position absolue pour ne jamais
           influencer la hauteur de la boîte, quelles que soient ses dimensions d'origine. */}
-      <div className={cn("relative aspect-[4/3] w-full shrink-0 overflow-hidden", imageBg(kind))}>
+      <div className={cn("relative aspect-4/3 w-full shrink-0 overflow-hidden", imageBg(kind))}>
         <Link href={href} aria-label={`Voir la fiche de ${name}`} className="absolute inset-0 block">
           {result.image && !imageBroken ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -125,6 +130,8 @@ export function ResultCard({
             </p>
           )}
         </div>
+
+        {match && <MatchBar match={match} />}
 
         {badges.length > 0 && (
           <div className="flex flex-wrap gap-1.5">

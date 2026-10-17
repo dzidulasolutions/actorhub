@@ -43,6 +43,18 @@ describe("exploreResults", () => {
       "Récent", "Ancien", "Sans date",
     ]);
   });
+
+    it("trie par score et filtre les bons scores", () => {
+    const items = [
+      normalizeResult({ title: "A" }, 0),
+      normalizeResult({ title: "B" }, 1),
+      normalizeResult({ title: "C" }, 2),
+    ];
+    const scores = new Map<number, number | null>([[0, 30], [1, 90], [2, null]]);
+    const scoreOf = (r: { index: number }) => scores.get(r.index) ?? null;
+    expect(exploreResults(items, "", NO_FILTERS, "match", scoreOf).map((r) => r.title)).toEqual(["B", "A", "C"]);
+    expect(exploreResults(items, "", { ...NO_FILTERS, goodMatch: true }, "default", scoreOf).map((r) => r.title)).toEqual(["B"]);
+  });
   
 });
 
