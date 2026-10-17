@@ -21,6 +21,8 @@ import type { ResultKind, SocialNetwork } from "@/types/results";
 import { useProfile } from "@/hooks/use-profile";
 import { createJobScorer } from "@/lib/job-match";
 import { MatchBar } from "./match-bar";
+import { AiAssistPanel } from "./ai-assist-panel";
+
 
 const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   linkedin: "LinkedIn", facebook: "Facebook", instagram: "Instagram",
@@ -182,6 +184,8 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
 
           {/* ===== Colonne principale ===== */}
           <div className="min-w-0 space-y-6">
+            {result.kind === "job" && <AiAssistPanel result={result} profile={profile} />}
+
             <Section title="Contact">
               <div className="space-y-3">
                 {emails.length > 0 ? (

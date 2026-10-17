@@ -17,7 +17,8 @@ import { clearSaved } from "@/lib/saved-searches-store";
 import { SettingsSkeleton } from "./settings-skeleton";
 import { useProfile } from "@/hooks/use-profile";
 import { getHealth, getMailStatus, sendMail } from "@/lib/api-client"; 
-
+import { useJobNotes } from "@/hooks/use-job-note";
+import { clearNotes } from "@/lib/job-notes-store";
 
 type Confirm = "actors" | "saved" | "profile" | "all";
 
@@ -68,6 +69,8 @@ export function SettingsPage() {
   const { saved, ready: savedReady } = useSavedSearches();
   const { profile, ready: profileReady } = useProfile();
 
+  const jobNotes = useJobNotes();
+  const notesCount = Object.keys(jobNotes).length;
 
   const [conn, setConn] = useState<Connection>({ state: "idle" });
   // `confirm` garde le type de suppression ; `confirmOpen` pilote l'affichage (la modale se ferme toujours elle-même)
@@ -113,6 +116,7 @@ export function SettingsPage() {
       if (confirm === "saved" || confirm === "all") await clearSaved();
       if (confirm === "all") {
         clearOnboarded();
+        if (confirm === "all") clearNotes();
         router.replace("/onboarding");
         return;
       }
@@ -270,6 +274,10 @@ export function SettingsPage() {
             <div className="flex justify-between gap-4 py-2.5">
               <dt className="text-muted-foreground">Profil et CV</dt>
               <dd className="font-medium">{profile.updatedAt ? "Renseigné" : "Vide"}</dd>
+            </div>
+            <div className="flex justify-between gap-4 py-2.5">
+              <dt className="text-muted-foreground">Analyses d&apos; offres</dt>
+              <dd className="font-medium">{notesCount}</dd>
             </div>
           </dl>
 
