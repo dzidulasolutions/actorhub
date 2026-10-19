@@ -16,9 +16,11 @@ import { clearOnboarded, saveActors } from "@/lib/local-storage";
 import { clearSaved } from "@/lib/saved-searches-store";
 import { SettingsSkeleton } from "./settings-skeleton";
 import { useProfile } from "@/hooks/use-profile";
-import { getHealth, getMailStatus, sendMail } from "@/lib/api-client"; 
+import { getHealth, getMailStatus, sendMail } from "@/lib/api-client";
 import { useJobNotes } from "@/hooks/use-job-note";
 import { clearNotes } from "@/lib/job-notes-store";
+import { clearSentLog, useSentLog } from "@/hooks/use-sent-log";
+
 
 type Confirm = "actors" | "saved" | "profile" | "all";
 
@@ -65,6 +67,7 @@ function Section({ title, description, children }: { title: string; description?
 
 export function SettingsPage() {
   const router = useRouter();
+  const sentLog = useSentLog();
   const { actors, ready: actorsReady } = useActors();
   const { saved, ready: savedReady } = useSavedSearches();
   const { profile, ready: profileReady } = useProfile();
@@ -78,7 +81,7 @@ export function SettingsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
-   const [mailInfo, setMailInfo] = useState<{ configured: boolean; from: string | null } | null>(null);
+  const [mailInfo, setMailInfo] = useState<{ configured: boolean; from: string | null } | null>(null);
   const [mailBusy, setMailBusy] = useState<"check" | "test" | null>(null);
   const [mailMsg, setMailMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
 
@@ -117,6 +120,7 @@ export function SettingsPage() {
       if (confirm === "all") {
         clearOnboarded();
         if (confirm === "all") clearNotes();
+        if (confirm === "all") clearSentLog();
         router.replace("/onboarding");
         return;
       }
@@ -278,6 +282,10 @@ export function SettingsPage() {
             <div className="flex justify-between gap-4 py-2.5">
               <dt className="text-muted-foreground">Analyses d&apos; offres</dt>
               <dd className="font-medium">{notesCount}</dd>
+            </div>
+            <div className="flex justify-between gap-4 py-2.5">
+              <dt className="text-muted-foreground">Candidatures envoyées</dt>
+              <dd className="font-medium">{sentLog.length}</dd>
             </div>
           </dl>
 

@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/types/profile";
 import type { NormalizedResult } from "@/types/results";
 import { ImprovePanel } from "./improve-panel";
+import { SendPanel } from "./send-panel";
 
 
 function Segmented<T extends string>({
@@ -250,7 +251,7 @@ export function LetterEditor({
             </div>
           </Section>
 
-           <ImprovePanel
+          <ImprovePanel
             profile={profile}
             job={job}
             offerDescription={result.description}
@@ -261,7 +262,7 @@ export function LetterEditor({
               setBodyEdited(true); // le texte appliqué n'est plus écrasé par un changement de langue ou de ton
             }}
           />
-          
+
         </div>
 
         {/* ===== Actions ===== */}
@@ -293,9 +294,20 @@ export function LetterEditor({
 
           {note && <p role="status" className="border-l-2 border-primary bg-accent px-3 py-2 text-xs">{note}</p>}
 
+          <SendPanel
+            to={to}
+            toValid={toValid}
+            subject={subject}
+            mailBody={mailBody}
+            letterText={`${header}\n\n${body}`}
+            pdfFilename={`lettre-${slugify(job.company ?? job.title ?? "candidature")}-${today.toISOString().slice(0, 10)}.pdf`}
+            company={job.company}
+            mentionCv={options.mentionCv}
+            author={profile.fullName || "ActorHub"}
+          />
           <p className="border-t border-border pt-3 text-xs text-muted-foreground">
-            Un lien d&apos;email ne peut pas contenir de pièce jointe : joins toi-même le PDF de la lettre et
-            ton CV avant d&apos;envoyer. Relis toujours le texte avant l&apos;envoi.
+            Avec « Ouvrir dans Gmail » ou ton application mail, joins toi-même le PDF de la lettre et ton CV :
+            un lien d&apos;email ne peut pas contenir de pièce jointe. Relis toujours le texte avant l&apos;envoi.
           </p>
         </aside>
       </div>
