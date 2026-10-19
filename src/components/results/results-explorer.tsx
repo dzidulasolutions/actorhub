@@ -23,7 +23,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useProfile } from "@/hooks/use-profile";
 import { createJobScorer } from "@/lib/job-match";
 import { NormalizedResult } from "@/types/results";
-
+import { useJobNotes } from "@/hooks/use-job-note";
+import { jobKey } from "@/lib/job-notes";
 
 const PAGE_SIZE = 12;
 
@@ -33,6 +34,7 @@ const FILTER_LABELS: Record<keyof Filters, string> = {
   withWebsite: "Avec site web",
   withSocial: "Avec réseau social",
   goodMatch: "Bon score (60+)",
+  analyzed: "Analysées",
 };
 
 export function ResultsExplorer({
@@ -51,7 +53,10 @@ export function ResultsExplorer({
   const matches = useMemo(() => new Map(results.map((r) => [r.index, scorer(r)] as const)), [results, scorer]);
   const scoreOf = useCallback((r: NormalizedResult) => matches.get(r.index)?.score ?? null, [matches]);
   const hasScores = useMemo(() => [...matches.values()].some((m) => m !== null), [matches]);
-  const counts = useMemo(() => countFilters(results, scoreOf), [results, scoreOf]);
+  const notes = useJobNotes();
+  const isAnalyzed = useCallback((r: NormalizedResult) => r.kind === "job" && notes[jobKey(r)] !== undefined, [notes]);
+  const counts = useMemo(() => countFilters(results, scoreOf, isAnalyzed), [results, scoreOf, isAnalyzed]);
+
 
 
 
@@ -59,9 +64,9 @@ export function ResultsExplorer({
   const [ui, setUi] = useExplorerState(runId);
   const { query, filters, sort, page, selected } = ui;
   const [exportOpen, setExportOpen] = useState(false);
-     const filtered = useMemo(
-    () => exploreResults(results, query, filters, sort, scoreOf),
-    [results, query, filters, sort, scoreOf]
+  const filtered = useMemo(
+    () => exploreResults(results, query, filters, sort, scoreOf, isAnalyzed),
+    [results, query, filters, sort, scoreOf, isAnalyzed]
   );
   const view = paginate(filtered, page, PAGE_SIZE);
 
@@ -119,22 +124,22 @@ export function ResultsExplorer({
 
       {/* Filtres avec compteurs */}
       <div className="flex flex-wrap gap-2">
-                {(Object.keys(FILTER_LABELS) as (keyof Filters)[])
-          .filter((key) => key !== "goodMatch" || hasScores)
+        {(Object.keys(FILTER_LABELS) as (keyof Filters)[])
+          .filter((key) => (key !== "goodMatch" || hasScores) && (key !== "analyzed" || counts.analyzed > 0 || filters.analyzed))
           .map((key) => (
-          <button
-            key={key}
-            type="button"
-            aria-pressed={filters[key]}
-            onClick={() => setUi((s) => ({ filters: { ...s.filters, [key]: !s.filters[key] }, page: 1 }))}
-            className={cn(
-              "border px-3 py-1.5 text-sm transition-colors",
-              filters[key] ? "border-primary bg-accent font-medium text-primary" : "border-border hover:bg-muted"
-            )}
-          >
-            {FILTER_LABELS[key]} <span className="text-muted-foreground">({counts[key]})</span>
-          </button>
-        ))}
+            <button
+              key={key}
+              type="button"
+              aria-pressed={filters[key]}
+              onClick={() => setUi((s) => ({ filters: { ...s.filters, [key]: !s.filters[key] }, page: 1 }))}
+              className={cn(
+                "border px-3 py-1.5 text-sm transition-colors",
+                filters[key] ? "border-primary bg-accent font-medium text-primary" : "border-border hover:bg-muted"
+              )}
+            >
+              {FILTER_LABELS[key]} <span className="text-muted-foreground">({counts[key]})</span>
+            </button>
+          ))}
         {hasActiveFilter && (
           <button type="button" onClick={resetFilters} className="px-2 text-sm text-muted-foreground hover:text-foreground">
             Réinitialiser
@@ -145,24 +150,24 @@ export function ResultsExplorer({
       {/* Compteur + sélection */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
 
-          <Button
-            type="button"
-            variant={exportOpen ? "outline" : "default"}
-            onClick={() => setExportOpen((o) => !o)}
-            aria-expanded={exportOpen}
-            className="h-9 gap-2 px-4"
-          >
-            {exportOpen ? (
-              <>
-                <X className="size-4" /> Fermer l&apos;export
-              </>
-            ) : (
-              <>
-                <IconlyDownload size={18} color="currentColor" />
-                {selected.size > 0 ? `Exporter (${selected.size})` : "Exporter"}
-              </>
-            )}
-          </Button>
+        <Button
+          type="button"
+          variant={exportOpen ? "outline" : "default"}
+          onClick={() => setExportOpen((o) => !o)}
+          aria-expanded={exportOpen}
+          className="h-9 gap-2 px-4"
+        >
+          {exportOpen ? (
+            <>
+              <X className="size-4" /> Fermer l&apos;export
+            </>
+          ) : (
+            <>
+              <IconlyDownload size={18} color="currentColor" />
+              {selected.size > 0 ? `Exporter (${selected.size})` : "Exporter"}
+            </>
+          )}
+        </Button>
 
         <p className="text-muted-foreground">
           {filtered.length} résultat{filtered.length > 1 ? "s" : ""}
@@ -192,7 +197,7 @@ export function ResultsExplorer({
           )}
         </div>
       </div>
-        {exportOpen && (
+      {exportOpen && (
         <ExportPanel
           items={items}
           filteredIndexes={filtered.map((r) => r.index)}
@@ -211,13 +216,14 @@ export function ResultsExplorer({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {view.items.map((r) => (
-          <ResultCard
+            <ResultCard
               key={r.index}
               result={r}
               href={`/searches/${runId}/results/${r.index}`}
               selected={selected.has(r.index)}
               onToggle={() => toggleOne(r.index)}
               match={matches.get(r.index) ?? null}
+              analyzed={isAnalyzed(r)}
             />
           ))}
         </div>

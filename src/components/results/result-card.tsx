@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Check, Copy, ExternalLink, Globe, ImageOff, Mail, Phone, Star } from "lucide-react";
+import { Check, Copy, ExternalLink, Globe, ImageOff, Mail, Phone, Star, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hostOf } from "@/lib/normalize-results";
 import type { NormalizedResult, ResultKind, SocialNetwork } from "@/types/results";
@@ -37,18 +37,13 @@ export function fmtDay(iso: string | null): string | null {
 }
 
 // Tout le contenu vient d'Apify : il est affiché comme du TEXTE (React l'échappe), jamais comme du HTML.
-export function ResultCard({
-  result,
-  href,
-  selected,
-  onToggle,
-  match = null,
-}: {
+export function ResultCard({ result, href, selected, onToggle, match = null, analyzed = false }: {
   result: NormalizedResult;
   href: string;
   selected: boolean;
   onToggle: () => void;
   match?: MatchResult | null;
+  analyzed?: boolean; // une analyse IA est enregistrée pour cette offre
 }) {
   const { kind, emails, phones, website, socials, facts, badges } = result;
   const [imageBroken, setImageBroken] = useState(false);
@@ -105,8 +100,19 @@ export function ResultCard({
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="space-y-1.5">
-          {kindLabel && (
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{kindLabel}</p>
+          {(kindLabel || analyzed) && (
+            <div className="flex items-center justify-between gap-2">
+              {kindLabel ? (
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{kindLabel}</p>
+              ) : (
+                <span />
+              )}
+              {analyzed && (
+                <span className="inline-flex items-center gap-1 bg-success/10 px-2 py-0.5 text-xs text-success">
+                  <CheckCircle2 className="size-3" /> Analysée
+                </span>
+              )}
+            </div>
           )}
           <h3 className="line-clamp-2 font-medium leading-snug">
             <Link href={href} className="hover:text-primary hover:underline">{name}</Link>

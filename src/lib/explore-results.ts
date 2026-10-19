@@ -18,6 +18,8 @@ export interface Filters {
   withWebsite: boolean;
   withSocial: boolean;
   goodMatch: boolean; // score de correspondance d'au moins GOOD_MATCH
+    analyzed: boolean; // offres dont tu as enregistré une analyse
+
 }
 
 export const NO_FILTERS: Filters = {
@@ -26,9 +28,11 @@ export const NO_FILTERS: Filters = {
   withWebsite: false,
   withSocial: false,
   goodMatch: false,
+  analyzed: false,
 };
 
 export type ScoreOf = (r: NormalizedResult) => number | null;
+export type IsAnalyzed = (r: NormalizedResult) => boolean;
 export const GOOD_MATCH = 60;
 
 // Minuscules et sans accents : "hotel" trouve "Hôtel"
@@ -87,7 +91,8 @@ export function exploreResults(
   query: string,
   filters: Filters,
   sort: SortKey,
-  scoreOf?: ScoreOf
+  scoreOf?: ScoreOf,
+  isAnalyzed?: IsAnalyzed
 ): NormalizedResult[] {
   const q = fold(query.trim());
   const out = results.filter(
@@ -97,7 +102,8 @@ export function exploreResults(
       (!filters.withPhone || r.phones.length > 0) &&
       (!filters.withWebsite || r.website !== null) &&
       (!filters.withSocial || r.socials.length > 0) &&
-      (!filters.goodMatch || (scoreOf?.(r) ?? -1) >= GOOD_MATCH)
+      (!filters.goodMatch || (scoreOf?.(r) ?? -1) >= GOOD_MATCH) &&
+      (!filters.analyzed || (isAnalyzed?.(r) ?? false))
   );
   if (sort === "default") return out;
   const sorted = [...out]; // on ne modifie jamais le tableau d'origine
@@ -111,13 +117,19 @@ export function exploreResults(
 
 
 // Compteurs affichés sur les filtres
-export function countFilters(results: NormalizedResult[], scoreOf?: ScoreOf): Record<keyof Filters, number> {
+export function countFilters(
+  results: NormalizedResult[],
+  scoreOf?: ScoreOf,
+  isAnalyzed?: IsAnalyzed
+): Record<keyof Filters, number> {
   return {
     withEmail: results.filter((r) => r.emails.length > 0).length,
     withPhone: results.filter((r) => r.phones.length > 0).length,
     withWebsite: results.filter((r) => r.website !== null).length,
     withSocial: results.filter((r) => r.socials.length > 0).length,
     goodMatch: scoreOf ? results.filter((r) => (scoreOf(r) ?? -1) >= GOOD_MATCH).length : 0,
+        analyzed: isAnalyzed ? results.filter(isAnalyzed).length : 0,
+
   };
 }
 
