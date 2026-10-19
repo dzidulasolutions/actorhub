@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_PROFILE } from "../types/profile";
-import { buildAnalysisPrompt, MAX_PROMPT_CV, MAX_PROMPT_OFFER, redactPersonalData } from "./ai-prompt";
 import { jobKey, pruneNotes, readNotes } from "./job-notes";
 import { normalizeResult } from "./normalize-results";
+import {
+  buildAnalysisPrompt, buildLetterImprovePrompt, extractLetterFromAnswer,
+  MAX_PROMPT_CV, MAX_PROMPT_OFFER, redactPersonalData, restorePlaceholders,
+} from "./ai-prompt";
+
 
 const profile = {
   ...EMPTY_PROFILE,
@@ -108,5 +112,44 @@ describe("jobKey, readNotes, pruneNotes", () => {
       milieu: { text: "3", updatedAt: "2026-02-01" },
     };
     expect(Object.keys(pruneNotes(notes, 2)).sort()).toEqual(["milieu", "recente"]);
+  });
+});
+
+describe("redactPersonalData (noms)", () => {
+  it("remplace un nom complet par un seul repère", () => {
+    expect(redactPersonalData("Cordialement,\nJoel Gamatho", profile)).toBe("Cordialement,\n[Nom]");
+  });
+});
+
+describe("lettre améliorée", () => {
+  const jobInfo = { title: "Web Developer", company: "Acme", description: "Build products with React." };
+  const letter = "Madame, Monsieur,\n\nTexte de la lettre.\n\nCordialement,\nJoel Gamatho";
+
+  it("construit la consigne avec les règles et masque les coordonnées", () => {
+    const { text } = buildLetterImprovePrompt(profile, jobInfo, letter, { language: "fr", redact: true });
+    expect(text).toContain("N'invente aucune expérience");
+    expect(text).toContain("Laisse tels quels les éléments entre crochets");
+    expect(text).toContain("Build products with React.");
+    expect(text).toContain("Cordialement,\n[Nom]");
+    expect(text).not.toContain("Gamatho");
+    expect(text).not.toContain("joel@exemple.tg");
+  });
+
+  it("demande de rester en anglais pour une lettre anglaise", () => {
+    const { text } = buildLetterImprovePrompt(profile, jobInfo, letter, { language: "en", redact: false });
+    expect(text).toContain("anglais");
+    expect(text).toContain("Joel Gamatho");
+  });
+
+  it("extrait la lettre et ignore la liste des changements", () => {
+    const answer = "Madame, Monsieur,\n\nTexte.\n\nCordialement,\n[Nom]\n---\n- Phrase d'accroche reformulée\n- Ton plus direct";
+    expect(extractLetterFromAnswer(answer)).toBe("Madame, Monsieur,\n\nTexte.\n\nCordialement,\n[Nom]");
+    expect(extractLetterFromAnswer("  Juste la lettre.  ")).toBe("Juste la lettre.");
+    expect(extractLetterFromAnswer("```\nLettre\n```\n---\n- note")).toBe("Lettre");
+  });
+
+  it("remet le nom, l'email et le téléphone, et laisse les repères sans valeur", () => {
+    expect(restorePlaceholders("[Nom]\n[email] · [téléphone]", profile)).toBe("Joel Gamatho\njoel@exemple.tg · +228 90 00 00 00");
+    expect(restorePlaceholders("[Nom] [profil LinkedIn]", EMPTY_PROFILE)).toBe("[Nom] [profil LinkedIn]");
   });
 });

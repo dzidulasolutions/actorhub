@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useJobNote } from "@/hooks/use-job-note";
@@ -13,12 +13,7 @@ import { deleteNote, saveNote } from "@/lib/job-notes-store";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/types/profile";
 import type { NormalizedResult } from "@/types/results";
-
-const CHATS = [
-  { label: "Claude", href: "https://claude.ai/new" },
-  { label: "ChatGPT", href: "https://chatgpt.com/" },
-  { label: "Gemini", href: "https://gemini.google.com/app" },
-];
+import { ChatLinks } from "./chat-links";
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 
@@ -100,11 +95,7 @@ export function AiAssistPanel({ result, profile }: { result: NormalizedResult; p
           {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
           {copied ? "Consigne copiée" : "Copier la consigne"}
         </Button>
-        {CHATS.map((c) => (
-          <Button key={c.label} variant="outline" className="h-9 gap-1.5" render={<a href={c.href} target="_blank" rel="noopener noreferrer" />} nativeButton={false}>
-            {c.label} <ExternalLink className="size-3.5" />
-          </Button>
-        ))}
+        <ChatLinks />
       </div>
 
       {(prompt.cvTruncated || prompt.offerTruncated) && (

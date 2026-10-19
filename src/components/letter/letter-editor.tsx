@@ -19,6 +19,8 @@ import { buildLetterPdf } from "@/lib/letter-pdf";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/types/profile";
 import type { NormalizedResult } from "@/types/results";
+import { ImprovePanel } from "./improve-panel";
+
 
 function Segmented<T extends string>({
   legend, value, onChange, options,
@@ -247,6 +249,19 @@ export function LetterEditor({
               )}
             </div>
           </Section>
+
+           <ImprovePanel
+            profile={profile}
+            job={job}
+            offerDescription={result.description}
+            body={body}
+            language={options.language}
+            onApply={(text) => {
+              setBody(text);
+              setBodyEdited(true); // le texte appliqué n'est plus écrasé par un changement de langue ou de ton
+            }}
+          />
+          
         </div>
 
         {/* ===== Actions ===== */}
