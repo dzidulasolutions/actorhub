@@ -25,6 +25,9 @@ import { createJobScorer } from "@/lib/job-match";
 import { NormalizedResult } from "@/types/results";
 import { useJobNotes } from "@/hooks/use-job-note";
 import { jobKey } from "@/lib/job-notes";
+import { useSentLog } from "@/hooks/use-sent-log";
+import { sentPurposeByRef } from "@/lib/sent-log";
+
 
 const PAGE_SIZE = 12;
 
@@ -35,6 +38,7 @@ const FILTER_LABELS: Record<keyof Filters, string> = {
   withSocial: "Avec réseau social",
   goodMatch: "Bon score (60+)",
   analyzed: "Analysées",
+  notContacted: "Pas encore contactées",
 };
 
 export function ResultsExplorer({
@@ -55,18 +59,21 @@ export function ResultsExplorer({
   const hasScores = useMemo(() => [...matches.values()].some((m) => m !== null), [matches]);
   const notes = useJobNotes();
   const isAnalyzed = useCallback((r: NormalizedResult) => r.kind === "job" && notes[jobKey(r)] !== undefined, [notes]);
-  const counts = useMemo(() => countFilters(results, scoreOf, isAnalyzed), [results, scoreOf, isAnalyzed]);
+const sentLog = useSentLog();
+  const sentMap = useMemo(() => sentPurposeByRef(sentLog), [sentLog]);
+  const sentPurposeOf = useCallback((r: NormalizedResult) => sentMap.get(jobKey(r)) ?? null, [sentMap]);
+  const isContacted = useCallback((r: NormalizedResult) => sentPurposeOf(r) !== null, [sentPurposeOf]);
 
-
+  const counts = useMemo(() => countFilters(results, scoreOf, isAnalyzed, isContacted), [results, scoreOf, isAnalyzed, isContacted]);
 
 
   // Recherche, filtres, tri, page et sélection : dans le store (survivent à la navigation)
   const [ui, setUi] = useExplorerState(runId);
   const { query, filters, sort, page, selected } = ui;
   const [exportOpen, setExportOpen] = useState(false);
-  const filtered = useMemo(
-    () => exploreResults(results, query, filters, sort, scoreOf, isAnalyzed),
-    [results, query, filters, sort, scoreOf, isAnalyzed]
+    const filtered = useMemo(
+    () => exploreResults(results, query, filters, sort, scoreOf, isAnalyzed, isContacted),
+    [results, query, filters, sort, scoreOf, isAnalyzed, isContacted]
   );
   const view = paginate(filtered, page, PAGE_SIZE);
 
@@ -125,7 +132,7 @@ export function ResultsExplorer({
       {/* Filtres avec compteurs */}
       <div className="flex flex-wrap gap-2">
         {(Object.keys(FILTER_LABELS) as (keyof Filters)[])
-          .filter((key) => (key !== "goodMatch" || hasScores) && (key !== "analyzed" || counts.analyzed > 0 || filters.analyzed))
+          .filter((key) => (key !== "goodMatch" || hasScores) && (key !== "analyzed" || counts.analyzed > 0 || filters.analyzed) && (key !== "notContacted" || results.length - counts.notContacted > 0 || filters.notContacted))
           .map((key) => (
             <button
               key={key}
@@ -224,6 +231,7 @@ export function ResultsExplorer({
               onToggle={() => toggleOne(r.index)}
               match={matches.get(r.index) ?? null}
               analyzed={isAnalyzed(r)}
+              sentAs={sentPurposeOf(r)}
             />
           ))}
         </div>

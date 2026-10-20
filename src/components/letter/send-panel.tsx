@@ -14,18 +14,38 @@ import { getMailStatus, sendMail, type MailAttachmentInput } from "@/lib/api-cli
 import { bytesToBase64 } from "@/lib/base64";
 import { buildLetterPdf } from "@/lib/letter-pdf";
 import { checkAttachment, MAX_ATTACHMENT_BYTES, type AllowedMime } from "@/lib/mail-validation";
-import { findPreviousSend } from "@/lib/sent-log";
+import { findPreviousSend, type SentPurpose } from "@/lib/sent-log";
 
 type Status =
   | { state: "loading" }
   | { state: "error"; text: string }
   | { state: "ready"; configured: boolean; from: string | null };
 
-interface CvFile {
+interface AttachedFile {
   name: string;
   mime: AllowedMime;
   bytes: Uint8Array;
 }
+
+// Textes selon la nature de l'envoi
+const TEXTS = {
+  application: {
+    attachPdf: "Joindre la lettre en PDF",
+    pdfShort: "lettre (PDF)",
+    filePick: "Joindre mon CV (PDF ou Word)",
+    send: "Envoyer la candidature",
+    confirmTitle: "Envoyer cette candidature ?",
+    done: (to: string) => `Candidature envoyée à ${to}. Une copie se trouve dans ton dossier « Envoyés » Gmail.`,
+  },
+  pitch: {
+    attachPdf: "Joindre la proposition en PDF",
+    pdfShort: "proposition (PDF)",
+    filePick: "Joindre un document (PDF ou Word)",
+    send: "Envoyer la proposition",
+    confirmTitle: "Envoyer cette proposition ?",
+    done: (to: string) => `Proposition envoyée à ${to}. Une copie se trouve dans ton dossier « Envoyés » Gmail.`,
+  },
+} as const;
 
 const DOCX = "application/vnd.openxmlformats-officedocument.wordprocessingml.document" as const;
 const mimeOf = (name: string): AllowedMime | null => {
@@ -36,21 +56,24 @@ const fmtSize = (n: number) => (n < 1024 * 1024 ? `${Math.max(1, Math.round(n / 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 
 export function SendPanel({
-  to, toValid, subject, mailBody, letterText, pdfFilename, company, mentionCv, author,
+  purpose = "application", refKey = null, to, toValid, subject, mailBody, letterText, pdfFilename, company, mentionCv, author,
 }: {
+  purpose?: SentPurpose;
+  refKey?: string | null; // clé de la fiche, pour le journal
   to: string;
   toValid: boolean;
   subject: string;
-  mailBody: string; // texte de l'email (lettre + coordonnées)
-  letterText: string; // texte du PDF (en-tête + lettre)
+  mailBody: string; // texte de l'email
+  letterText: string; // texte du PDF (en-tête + corps)
   pdfFilename: string;
   company: string | null;
-  mentionCv: boolean;
+  mentionCv: boolean; // le texte dit « CV ci-joint » (candidatures seulement)
   author: string;
 }) {
+  const t = TEXTS[purpose];
   const [status, setStatus] = useState<Status>({ state: "loading" });
-  const [attachLetter, setAttachLetter] = useState(true);
-  const [cv, setCv] = useState<CvFile | null>(null);
+  const [attachPdf, setAttachPdf] = useState(true);
+  const [file, setFile] = useState<AttachedFile | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -74,16 +97,16 @@ export function SendPanel({
     };
   }, []);
 
-  async function pickFile(file: File | undefined) {
-    if (!file) return;
+  async function pickFile(picked: File | undefined) {
+    if (!picked) return;
     setFileError(null);
-    const mime = mimeOf(file.name);
+    const mime = mimeOf(picked.name);
     if (!mime) return setFileError("Format non pris en charge : utilise un PDF ou un .docx");
-    if (file.size > MAX_ATTACHMENT_BYTES) return setFileError("Fichier trop volumineux (2 Mo maximum)");
-    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (picked.size > MAX_ATTACHMENT_BYTES) return setFileError("Fichier trop volumineux (2 Mo maximum)");
+    const bytes = new Uint8Array(await picked.arrayBuffer());
     const problem = checkAttachment(mime, bytes); // contrôle du contenu réel, pas seulement du nom
     if (problem) return setFileError(problem);
-    setCv({ name: file.name, mime, bytes });
+    setFile({ name: picked.name, mime, bytes });
   }
 
   function openConfirm() {
@@ -99,15 +122,15 @@ export function SendPanel({
     setResult(null);
     try {
       const attachments: MailAttachmentInput[] = [];
-      if (attachLetter) {
+      if (attachPdf) {
         const { bytes } = await buildLetterPdf(letterText, { title: subject, author });
         attachments.push({ filename: pdfFilename, mime: "application/pdf", contentBase64: bytesToBase64(bytes) });
       }
-      if (cv) attachments.push({ filename: cv.name, mime: cv.mime, contentBase64: bytesToBase64(cv.bytes) });
+      if (file) attachments.push({ filename: file.name, mime: file.mime, contentBase64: bytesToBase64(file.bytes) });
 
       await sendMail({ to: to.trim(), subject: subject.trim(), text: mailBody, attachments });
-      recordSent({ to: to.trim(), subject: subject.trim(), company, sentAt: new Date().toISOString() });
-      setResult({ kind: "ok", text: `Candidature envoyée à ${to.trim()}. Une copie se trouve dans ton dossier « Envoyés » Gmail.` });
+      recordSent({ to: to.trim(), subject: subject.trim(), company, sentAt: new Date().toISOString(), ref: refKey, purpose });
+      setResult({ kind: "ok", text: t.done(to.trim()) });
     } catch (e) {
       setResult({ kind: "error", text: e instanceof Error ? e.message : "Envoi impossible" });
     } finally {
@@ -116,7 +139,7 @@ export function SendPanel({
   }
 
   const previous = confirmOpen ? findPreviousSend(sentLog, to) : null;
-  const attachmentSummary = [attachLetter ? "lettre (PDF)" : null, cv ? `${cv.name} (${fmtSize(cv.bytes.length)})` : null].filter(Boolean);
+  const attachmentSummary = [attachPdf ? t.pdfShort : null, file ? `${file.name} (${fmtSize(file.bytes.length)})` : null].filter(Boolean);
 
   return (
     <div className="space-y-3 border-t border-border pt-3">
@@ -144,8 +167,8 @@ export function SendPanel({
           <p className="text-xs text-muted-foreground">Envoi depuis {status.from}</p>
 
           <label className="flex cursor-pointer items-center gap-2 text-sm">
-            <input type="checkbox" checked={attachLetter} onChange={(e) => setAttachLetter(e.target.checked)} className="size-4 accent-primary" />
-            Joindre la lettre en PDF
+            <input type="checkbox" checked={attachPdf} onChange={(e) => setAttachPdf(e.target.checked)} className="size-4 accent-primary" />
+            {t.attachPdf}
           </label>
 
           <div className="space-y-2">
@@ -153,24 +176,24 @@ export function SendPanel({
               ref={inputRef}
               type="file"
               accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              aria-label="Choisir mon CV"
+              aria-label={t.filePick}
               className="hidden"
               onChange={(e) => {
-                const file = e.target.files?.[0];
+                const picked = e.target.files?.[0];
                 e.target.value = ""; // permet de rechoisir le même fichier
-                void pickFile(file);
+                void pickFile(picked);
               }}
             />
-            {cv ? (
+            {file ? (
               <p className="flex items-center justify-between gap-2 border border-border px-3 py-2 text-sm">
-                <span className="min-w-0 truncate"><Paperclip className="mr-1.5 inline size-3.5" />{cv.name} · {fmtSize(cv.bytes.length)}</span>
-                <button type="button" onClick={() => setCv(null)} aria-label="Retirer le CV" className="shrink-0 text-muted-foreground hover:text-destructive">
+                <span className="min-w-0 truncate"><Paperclip className="mr-1.5 inline size-3.5" />{file.name} · {fmtSize(file.bytes.length)}</span>
+                <button type="button" onClick={() => setFile(null)} aria-label="Retirer le fichier" className="shrink-0 text-muted-foreground hover:text-destructive">
                   <X className="size-4" />
                 </button>
               </p>
             ) : (
               <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} className="h-9 w-full gap-2">
-                <Paperclip className="size-4" /> Joindre mon CV (PDF ou Word)
+                <Paperclip className="size-4" /> {t.filePick}
               </Button>
             )}
             {fileError && <p role="alert" className="text-xs text-destructive">{fileError}</p>}
@@ -178,7 +201,7 @@ export function SendPanel({
 
           <Button type="button" onClick={openConfirm} disabled={sending} className="h-10 w-full gap-2">
             {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-            {sending ? "Envoi en cours…" : "Envoyer la candidature"}
+            {sending ? "Envoi en cours…" : t.send}
           </Button>
 
           {formError && <p role="alert" className="text-xs text-destructive">{formError}</p>}
@@ -200,8 +223,8 @@ export function SendPanel({
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Envoyer cette candidature ?</AlertDialogTitle>
-            <AlertDialogDescription render={<div className="space-y-2 text-left" />}>
+            <AlertDialogTitle>{t.confirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription render={<div className="space-y-2 text-left"/>}>
               <div className="space-y-2 text-left">
                 <p><span className="font-medium text-foreground">À :</span> {to.trim()}</p>
                 <p><span className="font-medium text-foreground">Objet :</span> {subject.trim()}</p>
@@ -209,9 +232,14 @@ export function SendPanel({
                   <span className="font-medium text-foreground">Pièces jointes :</span>{" "}
                   {attachmentSummary.length > 0 ? attachmentSummary.join(", ") : "aucune"}
                 </p>
-                {mentionCv && !cv && (
+                {purpose === "application" && mentionCv && !file && (
                   <p className="border-l-2 border-highlight bg-highlight/10 px-3 py-2">
                     Ta lettre indique que ton CV est joint, mais aucun fichier de CV n&apos;est joint.
+                  </p>
+                )}
+                {purpose === "pitch" && (
+                  <p className="border-l-2 border-highlight bg-highlight/10 px-3 py-2">
+                    Cette entreprise ne t&apos;a rien demandé : relis une dernière fois que le message est clair, honnête et personnalisé.
                   </p>
                 )}
                 {previous && (

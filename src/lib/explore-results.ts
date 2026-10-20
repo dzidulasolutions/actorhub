@@ -1,7 +1,12 @@
 import type { NormalizedResult } from "@/types/results";
 
-export type SortKey = "default" | "name" | "rating" | "reviews" | "date" | "match";
-
+export type SortKey =
+  | "default"
+  | "name"
+  | "rating"
+  | "reviews"
+  | "date"
+  | "match";
 
 export const SORT_LABELS: Record<SortKey, string> = {
   default: "Ordre de collecte",
@@ -17,9 +22,9 @@ export interface Filters {
   withPhone: boolean;
   withWebsite: boolean;
   withSocial: boolean;
-  goodMatch: boolean; // score de correspondance d'au moins GOOD_MATCH
-    analyzed: boolean; // offres dont tu as enregistré une analyse
-
+  goodMatch: boolean;
+  analyzed: boolean;
+  notContacted: boolean; // exclut les fiches à qui tu as déjà écrit
 }
 
 export const NO_FILTERS: Filters = {
@@ -29,6 +34,7 @@ export const NO_FILTERS: Filters = {
   withSocial: false,
   goodMatch: false,
   analyzed: false,
+  notContacted: false,
 };
 
 export type ScoreOf = (r: NormalizedResult) => number | null;
@@ -37,7 +43,10 @@ export const GOOD_MATCH = 60;
 
 // Minuscules et sans accents : "hotel" trouve "Hôtel"
 export const fold = (s: string) =>
-  s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
 // Texte de recherche d'un résultat : champs standard + valeurs texte du premier niveau de l'objet original
 const cache = new WeakMap<NormalizedResult, string>();
@@ -46,9 +55,17 @@ function searchText(r: NormalizedResult): string {
   let text = cache.get(r);
   if (text === undefined) {
     const parts: (string | null)[] = [
-      r.title, r.tagline, r.subtitle, r.category, r.description, r.website,
-      ...r.emails, ...r.phones, ...r.socials.map((s) => s.url),
-      ...r.badges, ...r.facts.map((f) => f.value),
+      r.title,
+      r.tagline,
+      r.subtitle,
+      r.category,
+      r.description,
+      r.website,
+      ...r.emails,
+      ...r.phones,
+      ...r.socials.map((s) => s.url),
+      ...r.badges,
+      ...r.facts.map((f) => f.value),
     ];
     // Valeurs texte du premier niveau de l'objet original, sans les champs HTML
     // (sinon une recherche « p » ou « ul » trouverait des balises)
@@ -92,7 +109,8 @@ export function exploreResults(
   filters: Filters,
   sort: SortKey,
   scoreOf?: ScoreOf,
-  isAnalyzed?: IsAnalyzed
+  isAnalyzed?: IsAnalyzed,
+  isContacted?: IsAnalyzed,
 ): NormalizedResult[] {
   const q = fold(query.trim());
   const out = results.filter(
@@ -103,7 +121,8 @@ export function exploreResults(
       (!filters.withWebsite || r.website !== null) &&
       (!filters.withSocial || r.socials.length > 0) &&
       (!filters.goodMatch || (scoreOf?.(r) ?? -1) >= GOOD_MATCH) &&
-      (!filters.analyzed || (isAnalyzed?.(r) ?? false))
+      (!filters.analyzed || (isAnalyzed?.(r) ?? false)) &&
+      (!filters.notContacted || !(isContacted?.(r) ?? false)),
   );
   if (sort === "default") return out;
   const sorted = [...out]; // on ne modifie jamais le tableau d'origine
@@ -115,21 +134,25 @@ export function exploreResults(
   return sorted;
 }
 
-
 // Compteurs affichés sur les filtres
 export function countFilters(
   results: NormalizedResult[],
   scoreOf?: ScoreOf,
-  isAnalyzed?: IsAnalyzed
+  isAnalyzed?: IsAnalyzed,
+  isContacted?: IsAnalyzed,
 ): Record<keyof Filters, number> {
   return {
     withEmail: results.filter((r) => r.emails.length > 0).length,
     withPhone: results.filter((r) => r.phones.length > 0).length,
     withWebsite: results.filter((r) => r.website !== null).length,
     withSocial: results.filter((r) => r.socials.length > 0).length,
-    goodMatch: scoreOf ? results.filter((r) => (scoreOf(r) ?? -1) >= GOOD_MATCH).length : 0,
-        analyzed: isAnalyzed ? results.filter(isAnalyzed).length : 0,
-
+    goodMatch: scoreOf
+      ? results.filter((r) => (scoreOf(r) ?? -1) >= GOOD_MATCH).length
+      : 0,
+    analyzed: isAnalyzed ? results.filter(isAnalyzed).length : 0,
+    notContacted: isContacted
+      ? results.filter((r) => !isContacted(r)).length
+      : results.length,
   };
 }
 

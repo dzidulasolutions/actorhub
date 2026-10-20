@@ -7,6 +7,8 @@ import { hostOf } from "./normalize-results";
 
 export const FEW_REVIEWS_BELOW = 20;
 
+export const MAX_PITCH_SERVICES = 4; // au-delà, un message devient un catalogue
+
 export interface Observation {
   key: "praise" | "noWebsite" | "directoryOnly" | "fewReviews";
   fr: string;
@@ -18,7 +20,8 @@ export function pitchBlocker(r: NormalizedResult): string | null {
   if (r.kind === "job" || r.kind === "profile" || r.kind === "video") {
     return "La proposition de services est prévue pour les entreprises (fiches Google Maps ou sites web), pas pour les offres d'emploi, les profils de personnes ou les vidéos.";
   }
-  if (r.raw.permanentlyClosed === true) return "Cet établissement est indiqué comme fermé définitivement.";
+  if (r.raw.permanentlyClosed === true)
+    return "Cet établissement est indiqué comme fermé définitivement.";
   return null;
 }
 
@@ -56,8 +59,14 @@ export function observeCompany(r: NormalizedResult): Observation[] {
     if (reviews !== null && reviews < FEW_REVIEWS_BELOW) {
       out.push({
         key: "fewReviews",
-        fr: reviews === 0 ? "votre fiche ne compte encore aucun avis" : `votre fiche ne compte que ${reviews} avis`,
-        en: reviews === 0 ? "your listing has no reviews yet" : `your listing has only ${reviews} reviews`,
+        fr:
+          reviews === 0
+            ? "votre fiche ne compte encore aucun avis"
+            : `votre fiche ne compte que ${reviews} avis`,
+        en:
+          reviews === 0
+            ? "your listing has no reviews yet"
+            : `your listing has only ${reviews} reviews`,
       });
     }
   }
@@ -71,9 +80,13 @@ export interface PitchOptions {
   includePortfolio: boolean;
 }
 
-export function defaultPitchSubject(company: string | null, language: Language): string {
+export function defaultPitchSubject(
+  company: string | null,
+  language: Language,
+): string {
   const c = company?.trim();
-  if (language === "fr") return c ? `Proposition de services pour ${c}` : "Proposition de services";
+  if (language === "fr")
+    return c ? `Proposition de services pour ${c}` : "Proposition de services";
   return c ? `Services proposal for ${c}` : "Services proposal";
 }
 
@@ -82,7 +95,7 @@ export function generatePitchBody(
   company: string | null,
   services: Service[],
   observations: Observation[],
-  o: PitchOptions
+  o: PitchOptions,
 ): string {
   const fr = o.language === "fr";
   const formal = o.tone === "formal";
@@ -91,16 +104,26 @@ export function generatePitchBody(
   const target = company?.trim() || null;
 
   const greeting = target
-    ? fr ? `Bonjour l'équipe de ${target},` : `Hello ${target} team,`
-    : fr ? "Bonjour," : "Hello,";
+    ? fr
+      ? `Bonjour l'équipe de ${target},`
+      : `Hello ${target} team,`
+    : fr
+      ? "Bonjour,"
+      : "Hello,";
 
   const intro =
     name && headline
-      ? fr ? `Je m'appelle ${name} (${headline}).` : `My name is ${name} (${headline}).`
+      ? fr
+        ? `Je m'appelle ${name} (${headline}).`
+        : `My name is ${name} (${headline}).`
       : name
-        ? fr ? `Je m'appelle ${name}.` : `My name is ${name}.`
+        ? fr
+          ? `Je m'appelle ${name}.`
+          : `My name is ${name}.`
         : headline
-          ? fr ? `Je vous contacte pour mon activité : ${headline}.` : `I am contacting you about my work: ${headline}.`
+          ? fr
+            ? `Je vous contacte pour mon activité : ${headline}.`
+            : `I am contacting you about my work: ${headline}.`
           : null;
 
   const seen = o.includeObservations ? observations : [];
@@ -109,19 +132,31 @@ export function generatePitchBody(
       ? null
       : [
           fr
-            ? target ? `En consultant la fiche de ${target} en ligne, j'ai remarqué :` : "En consultant votre fiche en ligne, j'ai remarqué :"
-            : target ? `While looking at ${target}'s online listing, I noticed:` : "While looking at your online listing, I noticed:",
+            ? target
+              ? `En consultant la fiche de ${target} en ligne, j'ai remarqué :`
+              : "En consultant votre fiche en ligne, j'ai remarqué :"
+            : target
+              ? `While looking at ${target}'s online listing, I noticed:`
+              : "While looking at your online listing, I noticed:",
           ...seen.map((x) => `• ${fr ? x.fr : x.en}`),
         ].join("\n");
 
   const colon = fr ? " : " : ": ";
-  const offered = services.filter((s) => s.name.trim() !== "").slice(0, 4);
+  const offered = services
+    .filter((s) => s.name.trim() !== "")
+    .slice(0, MAX_PITCH_SERVICES);
   const servicesPara =
     offered.length === 0
       ? null
       : [
-          fr ? "Voici ce que je peux vous proposer :" : "Here is what I can offer you:",
-          ...offered.map((s) => (s.description.trim() ? `• ${s.name.trim()}${colon}${s.description.trim()}` : `• ${s.name.trim()}`)),
+          fr
+            ? "Voici ce que je peux vous proposer :"
+            : "Here is what I can offer you:",
+          ...offered.map((s) =>
+            s.description.trim()
+              ? `• ${s.name.trim()}${colon}${s.description.trim()}`
+              : `• ${s.name.trim()}`,
+          ),
         ].join("\n");
 
   const callToAction = fr
@@ -133,7 +168,12 @@ export function generatePitchBody(
       : "If this sounds interesting, let's talk for a few minutes to see what would make sense for you.";
 
   const site = profile.website.trim();
-  const portfolio = o.includePortfolio && site ? (fr ? `Quelques réalisations : ${site}` : `Some of my work: ${site}`) : null;
+  const portfolio =
+    o.includePortfolio && site
+      ? fr
+        ? `Quelques réalisations : ${site}`
+        : `Some of my work: ${site}`
+      : null;
 
   const optOut = fr
     ? "Si ce message ne vous concerne pas, répondez simplement « non merci » et je ne vous écrirai plus."
@@ -141,7 +181,16 @@ export function generatePitchBody(
 
   const signature = `${fr ? "Cordialement," : "Best regards,"}${name ? `\n${name}` : ""}`;
 
-  return [greeting, intro, observationsPara, servicesPara, callToAction, portfolio, optOut, signature]
+  return [
+    greeting,
+    intro,
+    observationsPara,
+    servicesPara,
+    callToAction,
+    portfolio,
+    optOut,
+    signature,
+  ]
     .filter((b): b is string => !!b)
     .join("\n\n");
 }

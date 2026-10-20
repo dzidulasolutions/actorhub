@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Check, Copy, ExternalLink, Globe, ImageOff, Mail, Phone, Star, CheckCircle2 } from "lucide-react";
+import { Check, Copy, ExternalLink, Globe, ImageOff, Mail, Phone, Star, CheckCircle2, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hostOf } from "@/lib/normalize-results";
 import type { NormalizedResult, ResultKind, SocialNetwork } from "@/types/results";
 import { imageBg, imageFit } from "./image-fit";
 import type { MatchResult } from "@/lib/job-match";
 import { MatchBar } from "./match-bar";
-
+import type { SentPurpose } from "@/lib/sent-log";
 
 const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   linkedin: "LinkedIn",
@@ -37,13 +37,14 @@ export function fmtDay(iso: string | null): string | null {
 }
 
 // Tout le contenu vient d'Apify : il est affiché comme du TEXTE (React l'échappe), jamais comme du HTML.
-export function ResultCard({ result, href, selected, onToggle, match = null, analyzed = false }: {
+export function ResultCard({ result, href, selected, onToggle, match = null, analyzed = false, sentAs = null }: {
   result: NormalizedResult;
   href: string;
   selected: boolean;
   onToggle: () => void;
   match?: MatchResult | null;
   analyzed?: boolean; // une analyse IA est enregistrée pour cette offre
+  sentAs?: SentPurpose | null;
 }) {
   const { kind, emails, phones, website, socials, facts, badges } = result;
   const [imageBroken, setImageBroken] = useState(false);
@@ -100,18 +101,25 @@ export function ResultCard({ result, href, selected, onToggle, match = null, ana
 
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="space-y-1.5">
-          {(kindLabel || analyzed) && (
+          {(kindLabel || analyzed || sentAs) && (
             <div className="flex items-center justify-between gap-2">
               {kindLabel ? (
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{kindLabel}</p>
               ) : (
                 <span />
               )}
-              {analyzed && (
-                <span className="inline-flex items-center gap-1 bg-success/10 px-2 py-0.5 text-xs text-success">
-                  <CheckCircle2 className="size-3" /> Analysée
-                </span>
-              )}
+              <div className="flex flex-wrap justify-end gap-1.5">
+                {sentAs && (
+                  <span className="inline-flex items-center gap-1 bg-accent px-2 py-0.5 text-xs text-primary">
+                    <Send className="size-3" /> {sentAs === "pitch" ? "Contactée" : "Candidature envoyée"}
+                  </span>
+                )}
+                {analyzed && (
+                  <span className="inline-flex items-center gap-1 bg-success/10 px-2 py-0.5 text-xs text-success">
+                    <CheckCircle2 className="size-3" /> Analysée
+                  </span>
+                )}
+              </div>
             </div>
           )}
           <h3 className="line-clamp-2 font-medium leading-snug">

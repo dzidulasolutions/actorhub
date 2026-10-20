@@ -115,6 +115,25 @@ describe("exploreResults", () => {
       ).map((r) => r.title),
     ).toEqual(["B"]);
   });
+
+  it("exclut les fiches déjà contactées", () => {
+    const items = [
+      normalizeResult({ title: "A" }, 0),
+      normalizeResult({ title: "B" }, 1),
+    ];
+    const isContacted = (r: { index: number }) => r.index === 0;
+    expect(
+      exploreResults(
+        items,
+        "",
+        { ...NO_FILTERS, notContacted: true },
+        "default",
+        undefined,
+        undefined,
+        isContacted,
+      ).map((r) => r.title),
+    ).toEqual(["B"]);
+  });
 });
 
 describe("paginate", () => {

@@ -21,7 +21,7 @@ import type { Profile } from "@/types/profile";
 import type { NormalizedResult } from "@/types/results";
 import { ImprovePanel } from "./improve-panel";
 import { SendPanel } from "./send-panel";
-
+import { jobKey } from "@/lib/job-notes";
 
 function Segmented<T extends string>({
   legend, value, onChange, options,
@@ -304,6 +304,8 @@ export function LetterEditor({
             company={job.company}
             mentionCv={options.mentionCv}
             author={profile.fullName || "ActorHub"}
+            purpose="application"
+            refKey={jobKey(result)}
           />
           <p className="border-t border-border pt-3 text-xs text-muted-foreground">
             Avec « Ouvrir dans Gmail » ou ton application mail, joins toi-même le PDF de la lettre et ton CV :
