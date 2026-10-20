@@ -18,7 +18,7 @@ import { FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CvImportError, extractCvText } from "@/lib/cv-text";
 import { CvImport } from "./cv-import";
-
+import { ServicesEditor } from "./services-editor";
 
 export function ProfilePage() {
   const { profile, ready } = useProfile();
@@ -55,7 +55,7 @@ function ProfileEditor({ initial }: { initial: Profile }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveError, setSaveError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
-    const [importing, setImporting] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [importNote, setImportNote] = useState<string | null>(null);
 
@@ -187,7 +187,25 @@ function ProfileEditor({ initial }: { initial: Profile }) {
             <TagInput id="p-places" label="Lieux recherchés" value={draft.targetLocations} onChange={(v) => set("targetLocations", v)} placeholder="Ex. Lomé, Remote, Paris" max={20} />
           </Section>
 
-<Section
+          <Section
+            title="Mes services (prospection)"
+            description="Ce que tu proposes aux entreprises. Ces textes servent à préparer des propositions personnalisées."
+          >
+            <ServicesEditor value={draft.services} onChange={(v) => set("services", v)} />
+            {errors.services && <p className="text-sm text-destructive">{errors.services}</p>}
+            <Field id="p-website" label="Lien de mes réalisations (facultatif)" error={errors.website}>
+              <Input
+                id="p-website"
+                type="url"
+                value={draft.website}
+                onChange={(e) => set("website", e.target.value)}
+                placeholder="https://…"
+                className="h-10"
+              />
+            </Field>
+          </Section>
+
+          <Section
             title="Mon CV"
             description="Importe ton CV (PDF, Word .docx ou texte) ou colle son contenu. Le fichier est lu dans ton navigateur : il n'est ni envoyé ni conservé, seul le texte l'est."
           >

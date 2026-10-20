@@ -44,6 +44,16 @@ export function ProfileSkeleton() {
             <Skeleton className="h-36 w-full" /> {/* zone d'import */}
             <FieldSkeleton height="h-64" />
           </SectionSkeleton>
+          <SectionSkeleton>
+            {Array.from({ length: 2 }).map((_, i) => (
+              <div key={i} className="space-y-2 border border-border p-3">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-14 w-full" />
+              </div>
+            ))}
+            <Skeleton className="h-9 w-40" />
+            <FieldSkeleton />
+          </SectionSkeleton>
         </div>
         {/* Colonne latérale : liste de contrôle */}
         <div className="h-fit space-y-4 border border-border bg-card p-4">

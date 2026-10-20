@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_PROFILE } from "../types/profile";
-import { mergeTags, profileReadiness, profileSchema, readProfile } from "./profile-schema";
+import { mergeTags, profileReadiness, profileSchema, readProfile, servicesReadiness } from "./profile-schema";
 
 describe("mergeTags", () => {
   it("sépare par virgule, point-virgule ou retour à la ligne, sans doublons", () => {
@@ -51,5 +51,31 @@ describe("profileReadiness", () => {
     };
     expect(profileReadiness(full).ready).toBe(true);
     expect(profileReadiness({ ...full, skills: ["React"] }).ready).toBe(false);
+  });
+});
+
+describe("services et lien de réalisations", () => {
+  const ok = { ...EMPTY_PROFILE, website: "https://gamatho.dev", services: [{ name: "Site vitrine", description: "Un site clair." }] };
+
+  it("valide les services et le lien", () => {
+    expect(profileSchema.safeParse(ok).success).toBe(true);
+    expect(profileSchema.safeParse({ ...ok, website: "gamatho.dev" }).success).toBe(false);
+    expect(profileSchema.safeParse({ ...ok, website: "javascript:alert(1)" }).success).toBe(false);
+    expect(profileSchema.safeParse({ ...ok, services: [{ name: "  ", description: "x" }] }).success).toBe(false);
+    const tooMany = Array.from({ length: 11 }, () => ({ name: "a", description: "" }));
+    expect(profileSchema.safeParse({ ...ok, services: tooMany }).success).toBe(false);
+  });
+
+  it("complète un ancien profil enregistré sans ces champs", () => {
+    const p = readProfile(JSON.stringify({ fullName: "Gamatho" }));
+    expect(p.services).toEqual([]);
+    expect(p.website).toBe("");
+  });
+
+  it("servicesReadiness exige un nom, un service décrit et un contact", () => {
+    expect(servicesReadiness(EMPTY_PROFILE).ready).toBe(false);
+    const ready = { ...ok, fullName: "Gamatho", email: "moi@exemple.tg" };
+    expect(servicesReadiness(ready).ready).toBe(true);
+    expect(servicesReadiness({ ...ready, services: [{ name: "Site", description: "" }] }).ready).toBe(false);
   });
 });
