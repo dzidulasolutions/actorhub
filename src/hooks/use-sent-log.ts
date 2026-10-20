@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import { addSentEntry, readSent, type SentEntry } from "@/lib/sent-log";
+import { entryKey } from "@/lib/tracking";
+
 
 const KEY = "actorhub:sent-log";
 const EMPTY: SentEntry[] = [];
@@ -53,4 +55,25 @@ export function clearSentLog(): void {
 
 export function useSentLog(): SentEntry[] {
   return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY);
+}
+
+function writeList(list: SentEntry[]): void {
+  try {
+    window.localStorage.setItem(KEY, JSON.stringify(list));
+  } catch {
+    return; // stockage plein ou désactivé
+  }
+  notify();
+}
+
+/** Met à jour une entrée (statut, note, relances). */
+export function updateSent(
+  key: string,
+  patch: Partial<Pick<SentEntry, "status" | "note" | "followUps" | "followedUpAt">>
+): void {
+  writeList(getSnapshot().map((e) => (entryKey(e) === key ? { ...e, ...patch } : e)));
+}
+
+export function removeSent(key: string): void {
+  writeList(getSnapshot().filter((e) => entryKey(e) !== key));
 }

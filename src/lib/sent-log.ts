@@ -1,4 +1,5 @@
 export type SentPurpose = "application" | "pitch";
+export type ContactStatus = "waiting" | "replied" | "done";
 
 export interface SentEntry {
   to: string;
@@ -7,9 +8,15 @@ export interface SentEntry {
   sentAt: string; // ISO 8601
   ref?: string | null; // clé de la fiche (offre ou entreprise) à laquelle l'envoi se rapporte
   purpose?: SentPurpose; // absent sur les anciens envois : ce sont des candidatures
+  status?: ContactStatus; // absent = en attente
+  note?: string; // note libre
+  followUps?: number; // nombre de relances déjà faites
+  followedUpAt?: string | null; // date de la dernière relance
 }
 
 export const MAX_SENT = 500;
+export const MAX_NOTE = 500;
+const STATUSES = new Set<string>(["waiting", "replied", "done"]);
 
 /** Lecture tolérante : des données corrompues donnent un journal vide, et les anciens envois restent lisibles. */
 export function readSent(raw: string | null): SentEntry[] {
@@ -28,6 +35,10 @@ export function readSent(raw: string | null): SentEntry[] {
         sentAt: e.sentAt,
         ref: typeof e.ref === "string" ? e.ref : null,
         purpose: e.purpose === "pitch" || e.purpose === "application" ? e.purpose : undefined,
+        status: STATUSES.has(e.status) ? e.status : undefined,
+        note: typeof e.note === "string" ? e.note.slice(0, MAX_NOTE) : undefined,
+        followUps: Number.isInteger(e.followUps) && e.followUps >= 0 && e.followUps <= 10 ? e.followUps : undefined,
+        followedUpAt: typeof e.followedUpAt === "string" ? e.followedUpAt : null,
       });
       if (out.length >= MAX_SENT) break;
     }
