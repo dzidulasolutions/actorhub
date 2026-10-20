@@ -22,6 +22,8 @@ import type { NormalizedResult } from "@/types/results";
 import { ImprovePanel } from "./improve-panel";
 import { SendPanel } from "./send-panel";
 import { jobKey } from "@/lib/job-notes";
+import { MarkSentButton } from "./mark-sent";
+
 
 function Segmented<T extends string>({
   legend, value, onChange, options,
@@ -293,6 +295,14 @@ export function LetterEditor({
           )}
 
           {note && <p role="status" className="border-l-2 border-primary bg-accent px-3 py-2 text-xs">{note}</p>}
+<MarkSentButton
+            to={to}
+            toValid={toValid}
+            subject={subject}
+            company={job.company}
+            refKey={jobKey(result)}
+            purpose="application"
+          />
 
           <SendPanel
             to={to}

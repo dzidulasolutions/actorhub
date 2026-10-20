@@ -23,6 +23,8 @@ import type { NormalizedResult } from "@/types/results";
 import { Section, Segmented } from "../letter/form-parts";
 import { SendPanel } from "../letter/send-panel";
 import { ShareActions } from "../letter/share-actions";
+import { MarkSentButton } from "../letter/mark-sent";
+
 
 const dateFormat = new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium", timeStyle: "short" });
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -287,6 +289,15 @@ export function PitchEditor({
             pdfFilename={pdfFilename}
             author={author}
             pdfLabel="Télécharger la proposition (PDF)"
+          />
+
+          <MarkSentButton
+            to={to}
+            toValid={toValid}
+            subject={subject}
+            company={company}
+            refKey={refKey}
+            purpose="pitch"
           />
 
           <SendPanel
