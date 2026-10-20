@@ -22,7 +22,7 @@ import { useProfile } from "@/hooks/use-profile";
 import { createJobScorer } from "@/lib/job-match";
 import { MatchBar } from "./match-bar";
 import { AiAssistPanel } from "./ai-assist-panel";
-
+import { pitchBlocker } from "@/lib/pitch";
 
 const SOCIAL_LABELS: Record<SocialNetwork, string> = {
   linkedin: "LinkedIn", facebook: "Facebook", instagram: "Instagram",
@@ -401,13 +401,23 @@ export function ResultDetail({ runId, index }: { runId: string; index: number })
               )}
             </div>
 
-                        {result.kind === "job" && (
+            {result.kind === "job" && (
               <Button
                 render={<Link href={`${base}/results/${index}/letter`} />}
                 nativeButton={false}
                 className="h-10 w-full"
               >
                 Préparer ma candidature
+              </Button>
+            )}
+
+            {pitchBlocker(result) === null && (
+              <Button
+                render={<Link href={`${base}/results/${index}/pitch`} />}
+                nativeButton={false}
+                className="h-10 w-full"
+              >
+                Proposer mes services
               </Button>
             )}
 
