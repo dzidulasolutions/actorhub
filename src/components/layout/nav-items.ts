@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { Settings , Send} from "lucide-react";
 import {
   IconlyHome,
   IconlySearch,
@@ -14,6 +14,7 @@ export const NAV_MAIN = [
   { href: "/actors", label: "Actors", icon: IconlyActivity },
   { href: "/results", label: "Résultats", icon: IconlyDocument },
   { href: "/searches", label: "Historique", icon: IconlyPaper },
+    { href: "/tracking", label: "Suivi", icon: Send },
 ] as const;
 
 export const NAV_PREFS = [

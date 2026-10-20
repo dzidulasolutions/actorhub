@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function SidebarNavSkeleton() {
   return (
     <div className="flex flex-1 flex-col gap-6" aria-hidden="true">
-      {[5, 2].map((count, g) => (
+      {[6, 2].map((count, g) => (
         <div key={g} className="space-y-1">
           <Skeleton className="mx-3 mb-2 h-3 w-16" />
           {Array.from({ length: count }).map((_, i) => (
