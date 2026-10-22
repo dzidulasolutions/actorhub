@@ -1,4 +1,4 @@
-import { Settings , Send} from "lucide-react";
+import { Settings , Send, GraduationCap} from "lucide-react";
 import {
   IconlyHome,
   IconlySearch,
@@ -15,6 +15,7 @@ export const NAV_MAIN = [
   { href: "/results", label: "Résultats", icon: IconlyDocument },
   { href: "/searches", label: "Historique", icon: IconlyPaper },
     { href: "/tracking", label: "Suivi", icon: Send },
+    { href: "/learn", label: "Apprendre", icon: GraduationCap },
 ] as const;
 
 export const NAV_PREFS = [

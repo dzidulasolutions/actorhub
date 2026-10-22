@@ -20,7 +20,9 @@ import { getHealth, getMailStatus, sendMail } from "@/lib/api-client";
 import { useJobNotes } from "@/hooks/use-job-note";
 import { clearNotes } from "@/lib/job-notes-store";
 import { clearSentLog, useSentLog } from "@/hooks/use-sent-log";
-
+import { useLearnPacks } from "@/hooks/use-learn";
+import { clearAllPacks } from "@/lib/learn/learn-store";
+import { clearLearnSettings } from "@/lib/learn/settings-store";
 
 type Confirm = "actors" | "saved" | "profile" | "all";
 
@@ -71,6 +73,8 @@ export function SettingsPage() {
   const { actors, ready: actorsReady } = useActors();
   const { saved, ready: savedReady } = useSavedSearches();
   const { profile, ready: profileReady } = useProfile();
+  const { packs: learnPacks, ready: learnReady } = useLearnPacks()
+
 
   const jobNotes = useJobNotes();
   const notesCount = Object.keys(jobNotes).length;
@@ -121,6 +125,10 @@ export function SettingsPage() {
         clearOnboarded();
         if (confirm === "all") clearNotes();
         if (confirm === "all") clearSentLog();
+              if (confirm === "all") {
+        clearLearnSettings();
+        await clearAllPacks();
+      }
         router.replace("/onboarding");
         return;
       }
@@ -286,6 +294,10 @@ export function SettingsPage() {
             <div className="flex justify-between gap-4 py-2.5">
               <dt className="text-muted-foreground">Candidatures envoyées</dt>
               <dd className="font-medium">{sentLog.length}</dd>
+            </div>
+            <div className="flex justify-between gap-4 py-2.5">
+              <dt className="text-muted-foreground">Packs d&apos;apprentissage</dt>
+              <dd className="font-medium">{learnPacks?.length ?? 0}</dd>
             </div>
           </dl>
 
